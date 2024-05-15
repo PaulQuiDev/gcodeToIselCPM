@@ -106,7 +106,7 @@ class CNC:
             return ("Erreur lors de l'envoi de l'instruction sur le port série :")
         
     def allezA(self,X:int,Y:int,Z:int) -> str:
-        if (self.eta != True ):
+        if (self.eta == True ):
             if (X < 0 or X > 200):
                 return ("x en dehors du plateau")
             elif (Y < 0 or Y > 150):
@@ -115,9 +115,10 @@ class CNC:
                 return ("z en dehors du plateau")
             else:
                 self.envoyer_Posistion('@0M ' + str(X*40) + "," + str(self.speed) + "," + str(Y*40) + "," + str(self.speed) + "," + str(Z*(-40)) + "," + str(self.speed) + "," + str(Z*(-40)) +  "," + str(self.speed) + "\r")
-    
+        else: print('machine non dispo')
+
     def allezAMachine(self,x:int,y:int,z:int)-> str:
-        if (self.eta != True ):
+        if (self.eta == True ):
             if (x < 0 or x > 8000):
                 return ("x en dehors du plateau")
             elif (y < 0 or y > 6000):
@@ -126,7 +127,7 @@ class CNC:
                 return ("z en dehors du plateau")
             else:
                 self.envoyer_Posistion('@0M ' + str(x) + "," + str(self.speed) + "," + str(y) + "," + str(self.speed) + "," + str(z*(-1)) + "," + str(self.speed) + "," + str(z*(-1)) +  "," + str(self.speed) + "\r")
-
+        else: print('machine non dispo')
 
     def AutoHome(self) -> str:
         return self.commande("@0R7\r")
