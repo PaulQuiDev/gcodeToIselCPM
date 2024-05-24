@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog , messagebox
 from PIL import Image, ImageTk
 from ClasseCNC import CNC
 import threading    
+import serial.tools.list_ports
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -29,6 +30,10 @@ class Tooltip:
             self.tooltip_window.destroy()
             self.tooltip_window = None
 
+    def update_text(self, new_text):
+        self.text = new_text
+
+
 class CNCInterface:
     def __init__(self, master):
         self.master = master
@@ -45,6 +50,7 @@ class CNCInterface:
         self.create_widgets()
         self.setup_grid()
         self.initConection()
+        self.disable_buttons()
 
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -52,6 +58,7 @@ class CNCInterface:
         style = ttk.Style()
         style.configure("TButton", background="grey", borderwidth=1, relief="flat")
 
+        self.tooltips = {}
         # Frame pour les boutons de direction
         self.direction_frame = ttk.LabelFrame(self.master, padding="10 10 10 10",text='Controle Machine')
         self.direction_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
@@ -92,7 +99,7 @@ class CNCInterface:
         self.define_button.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 
         # Boutons pour charger le fichier et lancer la découpe
-        self.load_button = ttk.Button(self.master, text='Load Fichier', image=self.img_open, command=self.load_file)
+        self.load_button = ttk.Button(self.master, text='Charger un Fichier', image=self.img_open, compound='top', command=self.load_file)
         self.load_button.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
@@ -122,25 +129,110 @@ class CNCInterface:
         self.progress_bar.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
 
         # Boutons d'arrêt et de connexion
-        self.stop_button = ttk.Button(self.master, text="Arrêt STOP", command=self.stop, style="Stop.TButton")
+        style = ttk.Style()
+        style.configure("Stop.TButton",
+                foreground="black",    # Couleur du texte
+                background="red",      # Couleur de fond
+                padding=10,           # Remplissage (optionnel)
+                font=("Helvetica", 12, "bold"))  # Police (optionnel)
+        
+        self.stop_button = ttk.Button(self.master, text="Arrêt STOP", command=self.stop  , style="Stop.TButton")
         self.stop_button.grid(row=5, column=0, padx=10, pady=10, sticky="nsew")
 
         self.connect_button = ttk.Button(self.master, text="Connexion", command=self.connect)
         self.connect_button.grid(row=5, column=1, padx=10, pady=10, sticky="nsew")
 
-        # Tooltips
-        Tooltip(self.x_minus_button, "-X")
-        Tooltip(self.x_plus_button, "+X")
-        Tooltip(self.y_minus_button, "-Y")
-        Tooltip(self.y_plus_button, "+Y")
-        Tooltip(self.z_minus_button, "-Z")
-        Tooltip(self.z_plus_button, "+Z")
-        Tooltip(self.load_button, " charger un fichier ")
-        Tooltip(self.start_button, " Vérifier tout avent de lancer")
-        Tooltip(self.start_tool_button, "Démarre l'outil")
-        Tooltip(self.stop_tool_button, "Arrête l'outil")
-        Tooltip(self.home_button, "Home")
+        self.tooltips[self.x_minus_button] = Tooltip(self.x_minus_button, "-X")
+        self.tooltips[self.x_plus_button] = Tooltip(self.x_plus_button, "+X")
+        self.tooltips[self.y_minus_button] = Tooltip(self.y_minus_button, "-Y")
+        self.tooltips[self.y_plus_button] = Tooltip(self.y_plus_button, "+Y")
+        self.tooltips[self.z_minus_button] = Tooltip(self.z_minus_button, "-Z")
+        self.tooltips[self.z_plus_button] = Tooltip(self.z_plus_button, "+Z")
+        self.tooltips[self.home_button] = Tooltip(self.home_button, "Home")
+        self.tooltips[self.increment_100mm_button] = Tooltip(self.increment_100mm_button, "100 mm")
+        self.tooltips[self.increment_10mm_button] = Tooltip(self.increment_10mm_button, "10 mm")
+        self.tooltips[self.increment_5mm_button] = Tooltip(self.increment_5mm_button, "5 mm")
+        self.tooltips[self.increment_1mm_button] = Tooltip(self.increment_1mm_button, "1 mm")
+        self.tooltips[self.define_button] = Tooltip(self.define_button, "Set Point 0")
+        self.tooltips[self.load_button] = Tooltip(self.load_button, "Load File")
+        self.tooltips[self.start_button] = Tooltip(self.start_button, "Start Cut")
+        self.tooltips[self.start_tool_button] = Tooltip(self.start_tool_button, "Start Tool")
+        self.tooltips[self.stop_tool_button] = Tooltip(self.stop_tool_button, "Stop Tool")
+        self.tooltips[self.stop_button] = Tooltip(self.stop_button, "Stop")
 
+    def disable_buttons(self):
+        self.x_minus_button.state(['disabled'])
+        self.x_plus_button.state(['disabled'])
+        self.y_minus_button.state(['disabled'])
+        self.y_plus_button.state(['disabled'])
+        self.z_minus_button.state(['disabled'])
+        self.z_plus_button.state(['disabled'])
+        self.home_button.state(['disabled'])
+        self.increment_100mm_button.state(['disabled'])
+        self.increment_10mm_button.state(['disabled'])
+        self.increment_5mm_button.state(['disabled'])
+        self.increment_1mm_button.state(['disabled'])
+        self.define_button.state(['disabled'])
+        self.load_button.state(['disabled'])
+        self.start_button.state(['disabled'])
+        self.start_tool_button.state(['disabled'])
+        self.stop_tool_button.state(['disabled'])
+    
+        # Mettre à jour les infobulles pour indiquer que l'imprimante n'est pas connectée
+        self.tooltips[self.x_minus_button].update_text("-X \n(Printer not connected)")
+        self.tooltips[self.x_plus_button].update_text("+X \n(Printer not connected)")
+        self.tooltips[self.y_minus_button].update_text("-Y \n(Printer not connected)")
+        self.tooltips[self.y_plus_button].update_text("+Y \n(Printer not connected)")
+        self.tooltips[self.z_minus_button].update_text("-Z \n(Printer not connected)")
+        self.tooltips[self.z_plus_button].update_text("+Z \n(Printer not connected)")
+        self.tooltips[self.home_button].update_text("Home \n(Printer not connected)")
+        self.tooltips[self.increment_100mm_button].update_text("100 mm \n(Printer not connected)")
+        self.tooltips[self.increment_10mm_button].update_text("10 mm \n(Printer not connected)")
+        self.tooltips[self.increment_5mm_button].update_text("5 mm \n(Printer not connected)")
+        self.tooltips[self.increment_1mm_button].update_text("1 mm \n(Printer not connected)")
+        self.tooltips[self.define_button].update_text("Set Point 0 \n(Printer not connected)")
+        self.tooltips[self.load_button].update_text("Load File \n(Printer not connected)")
+        self.tooltips[self.start_button].update_text("Start Cut \n(Printer not connected)")
+        self.tooltips[self.start_tool_button].update_text("Start Tool \n(Printer not connected)")
+        self.tooltips[self.stop_tool_button].update_text("Stop Tool \n(Printer not connected)")
+
+    def enable_buttons(self):
+        self.x_minus_button.state(['!disabled'])
+        self.x_plus_button.state(['!disabled'])
+        self.y_minus_button.state(['!disabled'])
+        self.y_plus_button.state(['!disabled'])
+        self.z_minus_button.state(['!disabled'])
+        self.z_plus_button.state(['!disabled'])
+        self.home_button.state(['!disabled'])
+        self.increment_100mm_button.state(['!disabled'])
+        self.increment_10mm_button.state(['!disabled'])
+        self.increment_5mm_button.state(['!disabled'])
+        self.increment_1mm_button.state(['!disabled'])
+        self.define_button.state(['!disabled'])
+        self.load_button.state(['!disabled'])
+        self.start_button.state(['!disabled'])
+        self.start_tool_button.state(['!disabled'])
+        self.stop_tool_button.state(['!disabled'])
+        self.stop_button.state(['!disabled'])
+
+        # Restaurer les infobulles originales
+        self.tooltips[self.x_minus_button].update_text("-X")
+        self.tooltips[self.x_plus_button].update_text("+X")
+        self.tooltips[self.y_minus_button].update_text("-Y")
+        self.tooltips[self.y_plus_button].update_text("+Y")
+        self.tooltips[self.z_minus_button].update_text("-Z")
+        self.tooltips[self.z_plus_button].update_text("+Z")
+        self.tooltips[self.home_button].update_text("Home")
+        self.tooltips[self.increment_100mm_button].update_text("100 mm")
+        self.tooltips[self.increment_10mm_button].update_text("10 mm")
+        self.tooltips[self.increment_5mm_button].update_text("5 mm")
+        self.tooltips[self.increment_1mm_button].update_text("1 mm")
+        self.tooltips[self.define_button].update_text("Set Point 0")
+        self.tooltips[self.load_button].update_text("Load File")
+        self.tooltips[self.start_button].update_text("Start Cut")
+        self.tooltips[self.start_tool_button].update_text("Start Tool")
+        self.tooltips[self.stop_tool_button].update_text("Stop Tool")
+        self.tooltips[self.stop_button].update_text("Stop")
 
     def setup_grid(self):
         for i in range(6):  # Changed from 7 to 6 because we placed tool control buttons in the same row
@@ -155,9 +247,6 @@ class CNCInterface:
         for i in range(4):
             self.increment_frame.grid_rowconfigure(0, weight=1)
             self.increment_frame.grid_columnconfigure(i, weight=1)
-
-
-
 
     def load_images(self):
         # Charger les images pour les boutons de direction
@@ -196,7 +285,7 @@ class CNCInterface:
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("GCode files", "*.*",)])
         try :
-            self.file = self.briot.Read_gcode(file_path) # ne pas faire conficne a l'utilisateur 
+            self.file = self.briot.Read_gcode(file_path) # ne pas faire confiance a l'utilisateur 
         except:
             self.message_text.insert(tk.END, "Erreur Format fichier\n")
             self.message_text.see(tk.END)
@@ -205,6 +294,7 @@ class CNCInterface:
             self.message_text.see(tk.END)
             
             try :
+                messagebox.showinfo("Zone travaille","Vérifier que la zone de travaille est bien sur votre piesce")
                 self.file = self.briot.generate_order(self.file)
                 if (len(self.file) < 2):
                     self.message_text.insert(tk.END, "no order understood\n")
@@ -260,11 +350,45 @@ class CNCInterface:
         if (message == "Bien Connecter"):
             self.message_text.insert(tk.END, "Connexion réussie\n")
             self.message_text.see(tk.END)
+            self.enable_buttons()
             if (self.briot.state == True):
-                self.connect_button.config(state=tk.DISABLED)
+                self.connect_button.config(state=tk.DISABLED)  
         else:
-            self.message_text.insert(tk.END, str(message)+"\n")
+            self.message_text.insert(tk.END, str(message)+"\n") 
             self.message_text.see(tk.END)
+            self.show_ports_window()
+
+    def show_ports_window(self):
+        self.ports_window = tk.Toplevel(self.master)
+        self.ports_window.title("Ports disponibles")
+        self.ports_window.geometry("300x200")
+
+        label = tk.Label(self.ports_window, text="Sélectionnez un port :")
+        label.pack(pady=10)
+
+        self.selected_port = tk.StringVar()
+        ports = serial.tools.list_ports.comports()
+        port_list = [port.device for port in ports]
+        port_menu = ttk.Combobox(self.ports_window, textvariable=self.selected_port, values=port_list)
+        port_menu.pack(pady=10)
+
+        retry_button = ttk.Button(self.ports_window, text="Réessayer la connexion", command=self.retry_connection)
+        retry_button.pack(pady=10) 
+
+    def retry_connection(self):
+        selected_port = self.selected_port.get()
+        if selected_port:
+            self.briot = CNC(selected_port)
+            message = self.briot.initialisation_connexion()
+            if message == "Bien Connecter":
+                self.message_text.insert(tk.END, "Connexion réussie\n")
+                self.message_text.see(tk.END)
+                self.connect_button.config(state=tk.DISABLED)
+                self.enable_buttons()
+                self.ports_window.destroy()
+            else:
+                self.message_text.insert(tk.END, str(message) + "\n")
+                self.message_text.see(tk.END)             
 
     def start_tool(self):
         message = self.briot.Start_Tool()

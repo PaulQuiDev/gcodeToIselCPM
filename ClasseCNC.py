@@ -248,7 +248,7 @@ class CNC:
             elif retour == "9":
                 return("/" + retour + "/ Erreur Alimentation couper")
             elif retour == "5":
-                return("/" + retour + "/ Erreur Bouton stop presser")
+                return("/" + retour + "/ Erreur Bouton stop presser (esseyer de redemarer la machine)")
             elif retour == "3":
                 return("/" + retour + "/ illegal number of axes")
             elif retour == "4":
