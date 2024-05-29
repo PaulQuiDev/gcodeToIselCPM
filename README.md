@@ -21,3 +21,4 @@ This is a graphical user interface (GUI) for controlling a CNC machine using Pyt
    ```sh
    git clone https://github.com/PaulQuiDev/gcodeToIselCPM
    ```
+   run interfaceEtConect.py 
