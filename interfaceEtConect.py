@@ -4,6 +4,11 @@ from PIL import Image, ImageTk
 from ClasseCNC import CNC
 import threading    
 import serial.tools.list_ports
+import matplotlib.pyplot as plt
+import numpy as np
+import subprocess
+import platform
+import shutil
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -50,7 +55,7 @@ class CNCInterface:
         self.create_widgets()
         self.setup_grid()
         self.initConection()
-        self.disable_buttons()
+        self.disable_buttons("(Printer not connected)")
 
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -160,7 +165,7 @@ class CNCInterface:
         self.tooltips[self.stop_tool_button] = Tooltip(self.stop_tool_button, "Stop Tool")
         self.tooltips[self.stop_button] = Tooltip(self.stop_button, "Stop")
 
-    def disable_buttons(self):
+    def disable_buttons(self,message :str):
         self.x_minus_button.state(['disabled'])
         self.x_plus_button.state(['disabled'])
         self.y_minus_button.state(['disabled'])
@@ -179,22 +184,22 @@ class CNCInterface:
         self.stop_tool_button.state(['disabled'])
     
         # Mettre à jour les infobulles pour indiquer que l'imprimante n'est pas connectée
-        self.tooltips[self.x_minus_button].update_text("-X \n(Printer not connected)")
-        self.tooltips[self.x_plus_button].update_text("+X \n(Printer not connected)")
-        self.tooltips[self.y_minus_button].update_text("-Y \n(Printer not connected)")
-        self.tooltips[self.y_plus_button].update_text("+Y \n(Printer not connected)")
-        self.tooltips[self.z_minus_button].update_text("-Z \n(Printer not connected)")
-        self.tooltips[self.z_plus_button].update_text("+Z \n(Printer not connected)")
-        self.tooltips[self.home_button].update_text("Home \n(Printer not connected)")
-        self.tooltips[self.increment_100mm_button].update_text("100 mm \n(Printer not connected)")
-        self.tooltips[self.increment_10mm_button].update_text("10 mm \n(Printer not connected)")
-        self.tooltips[self.increment_5mm_button].update_text("5 mm \n(Printer not connected)")
-        self.tooltips[self.increment_1mm_button].update_text("1 mm \n(Printer not connected)")
-        self.tooltips[self.define_button].update_text("Set Point 0 \n(Printer not connected)")
-        self.tooltips[self.load_button].update_text("Load File \n(Printer not connected)")
-        self.tooltips[self.start_button].update_text("Start Cut \n(Printer not connected)")
-        self.tooltips[self.start_tool_button].update_text("Start Tool \n(Printer not connected)")
-        self.tooltips[self.stop_tool_button].update_text("Stop Tool \n(Printer not connected)")
+        self.tooltips[self.x_minus_button].update_text("-X \n" + message)
+        self.tooltips[self.x_plus_button].update_text("+X \n" + message)
+        self.tooltips[self.y_minus_button].update_text("-Y \n" + message)
+        self.tooltips[self.y_plus_button].update_text("+Y \n" + message)
+        self.tooltips[self.z_minus_button].update_text("-Z \n" + message)
+        self.tooltips[self.z_plus_button].update_text("+Z \n" + message)
+        self.tooltips[self.home_button].update_text("Home \n" + message)
+        self.tooltips[self.increment_100mm_button].update_text("100 mm \n" + message)
+        self.tooltips[self.increment_10mm_button].update_text("10 mm \n" + message)
+        self.tooltips[self.increment_5mm_button].update_text("5 mm \n" + message)
+        self.tooltips[self.increment_1mm_button].update_text("1 mm \n" + message)
+        self.tooltips[self.define_button].update_text("Set Point 0 \n" + message)
+        self.tooltips[self.load_button].update_text("Load File \n" + message)
+        self.tooltips[self.start_button].update_text("Start Cut \n" + message)
+        self.tooltips[self.start_tool_button].update_text("Start Tool \n" + message)
+        self.tooltips[self.stop_tool_button].update_text("Stop Tool \n" + message)
 
     def enable_buttons(self):
         self.x_minus_button.state(['!disabled'])
@@ -262,6 +267,7 @@ class CNCInterface:
         self.img_toolStop = ImageTk.PhotoImage(Image.open("img/outilO.png").resize((40, 40)))
         self.img_home = ImageTk.PhotoImage(Image.open("img/home.png").resize((50,50)))
         self.img_Pt0 = ImageTk.PhotoImage(Image.open("img/spot0.png").resize((50,50)))
+        self.img_visu= ImageTk.PhotoImage(Image.open("img/Visu.png").resize((50,50)))
 
     def move(self,  axis : str , amount: int):
         message = ""
@@ -282,10 +288,97 @@ class CNCInterface:
         self.message_text.insert(tk.END, f"Point 0 défini at X:{self.briot.x} Y:{self.briot.y} Z:{self.briot.z} \n")
         self.message_text.see(tk.END)
 
+    def parse_plot_gcode(self ,gcode_lines):
+        x, y, z = 0, 0, 0
+        points_g0 = []
+        points_g1 = []
+        points_arc = []
+
+        for line in gcode_lines:
+            line = line.strip()
+            if line.startswith('G'):
+                parts = line.split()
+                command = parts[0]
+                new_x, new_y, new_z = x, y, z
+                i, j = 0, 0
+
+                for part in parts[1:]:
+                    if part.startswith('X'):
+                        new_x = float(part[1:])
+                    elif part.startswith('Y'):
+                        new_y = float(part[1:])
+                    elif part.startswith('Z'):
+                        new_z = float(part[1:])
+                    elif part.startswith('I'):
+                        i = float(part[1:])
+                    elif part.startswith('J'):
+                        j = float(part[1:])
+
+                if ( command == 'G0' or command=='G00'):
+                    points_g0.append((new_x, new_y, new_z))
+                elif ( command == 'G1' or command =='G01'):
+                    points_g1.append((new_x, new_y, new_z))
+                elif command in ('G2', 'G02', 'G3', 'G03'):
+                    arc_points = self.generate_arc(x, y, z, new_x, new_y, new_z, i, j, command in ('G2', 'G02'))
+                    points_arc.extend(arc_points)
+
+                x, y, z = new_x, new_y, new_z
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        if points_g0:
+            x_g0, y_g0, z_g0 = zip(*points_g0)
+            ax.plot(x_g0, y_g0, z_g0, label='G0 speed Moves', color='red', linestyle='--')
+        else:
+            print("No G0 commands found.")
+
+        if points_g1:
+            x_g1, y_g1, z_g1 = zip(*points_g1)
+            ax.plot(x_g1, y_g1, z_g1, label='G1 Moves', color='blue', linestyle=':')
+        else:
+            print("No G1 commands found.")
+        if points_arc:
+            x_arc, y_arc , z_arc = zip(*points_arc)
+            ax.plot(x_arc,y_arc,z_arc, label='Arc Moves' , color='green', linestyle='-')
+
+        if points_g0 or points_g1:
+            ax.set_xlabel('X axis')
+            ax.set_ylabel('Y axis')
+            ax.set_zlabel('Z axis')
+            ax.legend()
+            plt.show()
+        else:
+            print("No G-code commands found to plot.")
+            return
+    
+    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, num_points=20):
+            cx = x_start + i
+            cy = y_start + j
+            r = np.sqrt(i**2 + j**2)
+
+            start_angle = np.arctan2(y_start - cy, x_start - cx)
+            end_angle = np.arctan2(y_end - cy, x_end - cx)
+
+            if clockwise:
+                if end_angle > start_angle:
+                    end_angle -= 2 * np.pi
+            else:
+                if end_angle < start_angle:
+                    end_angle += 2 * np.pi
+
+            arc = np.linspace(start_angle, end_angle, num=num_points)
+            x_arc = cx + r * np.cos(arc)
+            y_arc = cy + r * np.sin(arc)
+            z_arc = np.linspace(z_start, z_end, num=num_points)  # Interpolating Z values
+
+            return list(zip(x_arc, y_arc, z_arc))
+
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("GCode files", "*.*",)])
         try :
             self.file = self.briot.Read_gcode(file_path) # ne pas faire confiance a l'utilisateur 
+            self.parse_plot_gcode(self.file)
         except:
             self.message_text.insert(tk.END, "Erreur Format fichier\n")
             self.message_text.see(tk.END)
@@ -307,13 +400,17 @@ class CNCInterface:
                 self.file = None
                 self.message_text.insert(tk.END, "Error in File\n")
                 self.message_text.see(tk.END)
-        
 
     def start_cut(self):
         if (isinstance(self.infoTool,bool)):
+            self.disable_buttons("In prosses")
             self.message_text.insert(tk.END, "Découpe commencée\n")
             self.message_text.see(tk.END)
             self.update_progress_bar(0)
+            self.briot.initialize_log_file()
+
+            self.start_button = ttk.Button(self.master, text="information découpe", image=self.img_visu, compound='left' , command=lambda: self.open_Visualisation()) # remplacer pour faire apparaitre la fenaitre avec plus d'information
+            self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
             
             self.stop_event.clear()  # Assurez-vous que l'événement d'arrêt est effacé
 
@@ -335,6 +432,10 @@ class CNCInterface:
 
         self.message_text.insert(tk.END, "Découpe terminée\n")
         self.message_text.see(tk.END)
+        self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
+        self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+        self.start_button.state(['disabled'])
+        self.enable_buttons()
 
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
@@ -435,7 +536,23 @@ class CNCInterface:
         self.briot.deconnection()
         self.master.destroy()
 
+    def open_in_new_terminal(self,script_path):
+        if platform.system() == 'Windows':
+            subprocess.Popen(['start', 'cmd', '/c', f'python {script_path}'], shell=True)
+        elif platform.system() == 'Linux':
+            # Try different terminal emulators commonly available on Linux
+            terminal_emulators = ['gnome-terminal', 'xterm', 'konsole', 'lxterminal', 'xfce4-terminal', 'mate-terminal', 'tilix', 'terminator']
+            for terminal in terminal_emulators:
+                if shutil.which(terminal):
+                    subprocess.Popen([terminal, '--', 'python3', script_path])
+                    return
+            raise EnvironmentError("No supported terminal emulator found. Please install one of the following: gnome-terminal, xterm, konsole, lxterminal, xfce4-terminal, mate-terminal, tilix, terminator")
+        else:
+            raise NotImplementedError("Unsupported platform")
     
+    def open_Visualisation(self):
+        self.open_in_new_terminal('openVisu.py')
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = CNCInterface(master=root)

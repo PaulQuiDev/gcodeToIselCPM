@@ -1,4 +1,5 @@
 import serial
+import numpy as np
 
 class CNC:
     def __init__(self, Port='COM8') -> None:
@@ -22,6 +23,8 @@ class CNC:
         self.y0 = 0
         self.z0 = 0
 
+        self.log_file = 'cnc_logs.txt'
+        self.initialize_log_file()
 
 #Note : position minuscule = position lengage machine , Maj = position en mm 
 
@@ -46,35 +49,67 @@ class CNC:
         
         speed = 200
         x , y , z = 0 , 0 , 0  #initilaliser au 0 locale 
+        d , j = 0, 0
         minx , miny , maxx , maxy = 8000 ,6000,0,0
         ordre = []
         for i in instru:
-            a = i.split(' ')
-            if len(a) > 1 and a[0][0] == 'G':  # commande de direction
-                for truc in a:
-                    if truc.find('X') != -1:
-                        x = float(truc.removeprefix('X'))
+            word = i.split(' ')
+            if len(word) > 1 and word[0][0] == 'G':  # commande de direction
+                old_x ,old_y , old_z = x ,y ,z
+                for truc in word:
+                    if truc.startswith('X'):
+                        x = float(truc[1:])
                         #print('x :' , x , " machin=" , x*40)
-                    if truc.find('Y') != -1:
-                        y = float(truc.removeprefix('Y'))
+                    elif truc.startswith('Y'):
+                        y = float(truc[1:])
                         #print('y :', y , " machin=" , y*40)
-                    if truc.find('Z') != -1:
-                        z = float(truc.removeprefix('Z'))
+                    elif truc.startswith('Z'):
+                        z = float(truc[1:])
                         #print('z :' , z, " machin=" , z*40)
-                    if truc.find('F') != -1:
-                        speed = int(float(truc.removeprefix('F')))
-                if (i[1] == '1' or i[2] == '1'): # suivent les versiont c'est G1 ou G01
+                    elif truc.startswith('F'):
+                        speed = int(float(truc[1:]))
+                    # juste pour la rotation    
+                    elif truc.startswith('I'):
+                        d = float(truc[1:])
+                    elif truc.startswith('J'):
+                        j = float(truc[1:])
+                    
+                if (word[0] == 'G1' or word[0] == 'G01'): # suivent les versiont c'est G1 ou G01
                     ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r")
                     #self.afficher_instruction(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r",ende='\n\n ')
 
-                elif (i[1] == '0' or i[2] == '0') : #c'est un G0 mouvement rapide 
+                elif (word[0] == 'G0' or word[0] == 'G00') : #c'est un G0 mouvement rapide 
                     ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r")
                     #self.afficher_instruction(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r",ende='\n\n')
+                    
+                elif (word[0] in ('G2', 'G02', 'G3', 'G03')): # boucle qui génere les arrondies 
+                    arc_points = self.generate_arc(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'))
+                    for ptRotate in arc_points:
+
+                        x , y , z = ptRotate[0] , ptRotate[1] , ptRotate[2]
+                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
+                        posx = int(x*40 + self.x0)
+                        posy = int(y*40 + self.y0 )   
+                        if  (abs(z*40) + abs(self.z0) > 4000): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
+                            print('Dépasse axe Z' , z)
+                            return ['Dépasse axe Z']
+                        if (posx > 8000 or posx < 0):
+                            print('hors max X')
+                            return ['hors max X']
+                        if (posy > 6000 or posy < 0): 
+                            print('hors max y')
+                            return['hors max y']
+                        if (posx > maxx): maxx = round( posx, -1)
+                        if (posx < minx) : minx = round( posx, -1)
+        
+                        if (posy > maxy): maxy = round( posy, -1)
+                        if (posy < miny) : miny = round( posy, -1)
                 else :
                     print('Commande Non Pris en compte ' , i)
-                posx = int(x*40 + self.x0)
-                posy = int(y*40 + self.y0 )
 
+                posx = int(x*40 + self.x0) # variable hors plateau
+                posy = int(y*40 + self.y0 )
+                
                 if  (abs(z*40) + abs(self.z0) > 4000): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
                     print('Dépasse axe Z' , z)
                     return ['Dépasse axe Z']
@@ -104,6 +139,28 @@ class CNC:
             self.go_to(maxx, miny,(int(self.z0/40)- retract))
             self.go_to(minx,miny,(int(self.z0/40)- retract))
         return ordre
+
+    def generate_arc(self,x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, num_points=20):
+        cx = x_start + i
+        cy = y_start + j
+        r = np.sqrt(i**2 + j**2)
+
+        start_angle = np.arctan2(y_start - cy, x_start - cx)
+        end_angle = np.arctan2(y_end - cy, x_end - cx)
+
+        if clockwise:
+            if end_angle > start_angle:
+                end_angle -= 2 * np.pi
+        else:
+            if end_angle < start_angle:
+                end_angle += 2 * np.pi
+
+        arc = np.linspace(start_angle, end_angle, num=num_points)
+        x_arc = cx + r * np.cos(arc)
+        y_arc = cy + r * np.sin(arc)
+        z_arc = np.linspace(z_start, z_end, num=num_points)  # Interpolating Z values
+
+        return list(zip(x_arc, y_arc, z_arc))
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
@@ -146,12 +203,29 @@ class CNC:
                 self.ser.write(instruction.encode('utf-8'))
                 instru = instruction.split(',')
                 self.x , self.y , self.z = float(instru[0][4:]) , float(instru[2]) , abs(float(instru[4]))
+                self.log_position(f"X{self.x},Y{self.y},Z{-self.z}")
                 return self.Read_machine_message()
             except serial.SerialException as e:
                 return ("Erreur lors de l'envoi de l'instruction sur le port série :", e)
         else : 
             return ("Non connecter ")
         
+    def log_position(self, instruction: str) -> None:
+        """Écrit les commandes de position dans un fichier texte."""
+        try:
+            with open(self.log_file, 'a+') as log:
+                log.write(f"{instruction}\n")
+        except IOError as e:
+            print(f"Erreur lors de l'écriture dans le fichier de logs : {e}")
+
+    def initialize_log_file(self) -> None:
+        """Initialise (écrase) le fichier de logs."""
+        try:
+            with open(self.log_file, 'w+') as log:
+                log.write("Log de commandes CNC\n")
+        except IOError as e:
+            print(f"Erreur lors de l'initialisation du fichier de logs : {e}")
+
     def _commander_(self, instruction: str) -> str: #ordre direct sans vérificateion de connection pas de possition
         try:
             self.ser.write(instruction.encode('utf-8'))
@@ -159,7 +233,7 @@ class CNC:
         except serial.SerialException as e:
             return ("Erreur lors de l'envoi de l'instruction sur le port série :", e)
         
-    def commande(self, instruction: str) -> str: #ordre direct sans vérificateion de connection pas de possition
+    def commande(self, instruction: str) -> str: #ordre direct avec vérificateion de connection , pas de possition
         if ( self.state == True):
             self.ser.write(instruction.encode('utf-8'))
             return self.Read_machine_message()
@@ -267,12 +341,14 @@ if __name__ == "__main__":
     briot.DefSpeed(35)
 
     briot.go_to(20,20,20)
-
+    briot.SetLocal0()
     print(briot.move_X(5))
 
     for i in range(5):
         print(briot.move_X(3))
-
+    
+    gcode = briot.Read_gcode('Holder.nc')
+    ordre = briot.generate_order(gcode)
     
 
     briot.Stop_Tool()
