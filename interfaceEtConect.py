@@ -537,15 +537,24 @@ class CNCInterface:
         self.briot.deconnection()
         self.master.destroy()
 
-    def open_in_new_terminal(self,script_path):
+    def open_in_new_terminal(self, script_path):
         if platform.system() == 'Windows':
             subprocess.Popen(['start', 'cmd', '/c', f'python {script_path}'], shell=True)
         elif platform.system() == 'Linux':
             # Try different terminal emulators commonly available on Linux
-            terminal_emulators = ['gnome-terminal', 'xterm', 'konsole', 'lxterminal', 'xfce4-terminal', 'mate-terminal', 'tilix', 'terminator']
-            for terminal in terminal_emulators:
+            terminal_emulators = [
+                ('gnome-terminal', ['--']),
+                ('xterm', ['-e']),
+                ('konsole', ['-e']),
+                ('lxterminal', ['-e']),
+                ('xfce4-terminal', ['--command']),
+                ('mate-terminal', ['--command']),
+                ('tilix', ['-e']),
+                ('terminator', ['-e'])
+            ]
+            for terminal, option in terminal_emulators:
                 if shutil.which(terminal):
-                    subprocess.Popen([terminal, '--', 'python3', script_path])
+                    subprocess.Popen([terminal] + option + ['python3', script_path])
                     return
             raise EnvironmentError("No supported terminal emulator found. Please install one of the following: gnome-terminal, xterm, konsole, lxterminal, xfce4-terminal, mate-terminal, tilix, terminator")
         else:
