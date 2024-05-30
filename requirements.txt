@@ -1,0 +1,4 @@
+pillow
+pyserial
+matplotlib
+numpy

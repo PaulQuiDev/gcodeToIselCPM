@@ -487,6 +487,7 @@ class CNCInterface:
                 self.connect_button.config(state=tk.DISABLED)
                 self.enable_buttons()
                 self.ports_window.destroy()
+                self.briot.DefSpeed(30)
             else:
                 self.message_text.insert(tk.END, str(message) + "\n")
                 self.message_text.see(tk.END)             
