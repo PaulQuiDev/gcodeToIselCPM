@@ -84,7 +84,7 @@ class CNC:
                     
                 elif (word[0] in ('G2', 'G02', 'G3', 'G03')): # boucle qui génere les arrondies 
                     arc_points = self.generate_arc(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'))
-                    for ptRotate in arc_points:
+                    for ptRotate in arc_points: # vérification des arrondies 
 
                         x , y , z = ptRotate[0] , ptRotate[1] , ptRotate[2]
                         ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
@@ -140,7 +140,7 @@ class CNC:
             self.go_to(minx,miny,(int(self.z0/40)- retract))
         return ordre
 
-    def generate_arc(self,x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, num_points=20):
+    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=1):
         cx = x_start + i
         cy = y_start + j
         r = np.sqrt(i**2 + j**2)
@@ -154,6 +154,9 @@ class CNC:
         else:
             if end_angle < start_angle:
                 end_angle += 2 * np.pi
+
+        arc_length = abs(end_angle - start_angle) * r
+        num_points = max(int(arc_length * points_per_unit), 2)  # Ensure at least 2 points
 
         arc = np.linspace(start_angle, end_angle, num=num_points)
         x_arc = cx + r * np.cos(arc)
