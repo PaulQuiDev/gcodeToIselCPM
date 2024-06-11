@@ -442,6 +442,7 @@ class CNCInterface:
         self.stop_tool()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
+        self.enable_buttons()
 
     def connect(self):
         if(self.briot.ser == None):
