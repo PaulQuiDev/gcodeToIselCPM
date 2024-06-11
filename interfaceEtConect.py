@@ -447,7 +447,7 @@ class CNCInterface:
     def connect(self):
         if(self.briot.ser == None):
             if platform.system() == 'Linux': # autre méthode de port sur linux
-                self.briot = CNC('/dev/ttyUBS0')
+                self.briot = CNC('/dev/ttyUSB0')
             else :
                 self.briot = CNC() #si pas connecter réinisialiste 
             self.briot.DefSpeed(35)
