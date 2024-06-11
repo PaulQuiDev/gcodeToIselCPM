@@ -50,7 +50,7 @@ class CNC:
         speed = 200
         x , y , z = 0 , 0 , 0  #initilaliser au 0 locale 
         d , j = 0, 0
-        minx , miny , maxx , maxy = 8000 ,6000,0,0
+        minx , miny , maxx , maxy = 8000 ,7900,0,0
         ordre = []
         for i in instru:
             word = i.split(' ')
@@ -96,7 +96,7 @@ class CNC:
                         if (posx > 8000 or posx < 0):
                             print('hors max X')
                             return ['hors max X']
-                        if (posy > 6000 or posy < 0): 
+                        if (posy > 7900 or posy < 0): 
                             print('hors max y')
                             return['hors max y']
                         if (posx > maxx): maxx = round( posx, -1)
@@ -116,7 +116,7 @@ class CNC:
                 if (posx > 8000 or posx < 0):
                     print('hors max X')
                     return ['hors max X']
-                if (posy > 6000 or posy < 0): 
+                if (posy > 7900 or posy < 0): 
                     print('hors max y')
                     return['hors max y']
                 if (posx > maxx): maxx = round( posx, -1)
@@ -127,7 +127,7 @@ class CNC:
         #faire le dessin de la zone 
         if (self.z0 > 200): retract = 10
         else : retract = 0
-        if(minx != 8000 or miny != 6000 ):
+        if(minx != 8000 or miny != 7900 ):
             maxx = int(maxx/40)
             minx = int(minx/40)
             maxy = int(maxy/40)
@@ -172,13 +172,12 @@ class CNC:
             self._commander_("@0B4,0\r")
             self._commander_("@0B5,0\r")
             self._commander_("@0B,64\r")
+            sorti= self._commander_("@0R7\r")
+            print("AutoHome :" , sorti )
             if (sorti == "0"):
-                sorti= self._commander_("@0R7\r")
-                print("AutoHome :" , sorti )
-                if (sorti == "0"):
-                    self.state =True
-                    self.x , self.y ,self.z = 0,0,0
-                    return "Bien Connecter"
+                self.state =True
+                self.x , self.y ,self.z = 0,0,0
+                return "Bien Connecter"
             else:
                 self.state = False
                 return "non disponible"
@@ -254,9 +253,9 @@ class CNC:
 
     def go_to_machin(self,x:int,y:int,z:int)-> str: # problemme 
         if (self.state == True ):
-            if (x < 0 or x > 8000):
+            if (x < 0 or x > 8000):  
                 return ("x en dehors du plateau")
-            elif (y < 0 or y > 6000):
+            elif (y < 0 or y > 7900):
                 return ("Y en dehors du plateau")
             elif (z < 0 or z > 4000):
                 return ("z en dehors du plateau")
@@ -282,7 +281,7 @@ class CNC:
         else: print("Position x invalide")
         
     def move_Y(self, Y: int) -> str:
-        if (self.y + (Y * 40)) > 0 or (self.y + (Y * 40) < 6000):
+        if (self.y + (Y * 40)) > 0 or (self.y + (Y * 40) < 7900):
             return self.go_to_machin( int(self.x), int(self.y + Y*40),  int(self.z))
         else: print("Position y invalide")
 
@@ -318,6 +317,8 @@ class CNC:
                 #print("Machine non disponible ¯\_(ツ)_/¯")
                 return("/" + retour + "/ Erreur Machine non démarer")
             elif retour == "2" :  
+                print("essay home position :",end="")
+                self._commander_("@0R7")
                 return("/" + retour + "/ Erreur Coordonner Hors plateau ou emergency tsop")
             elif retour == "9":
                 return("/" + retour + "/ Erreur Alimentation couper")
@@ -329,6 +330,8 @@ class CNC:
                 return("/" + retour + "/ axis not defind")
             elif retour == "7":
                 return("/" + retour + "/ illegal parametre")
+            elif retour == "H":
+                return("/" + retour + "/ Panneau ouvert")
             else :
                 return ("/" + retour + "/ Erreur de....")
     
