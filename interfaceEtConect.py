@@ -569,5 +569,6 @@ class CNCInterface:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    #conection
     app = CNCInterface(master=root)
     root.mainloop()
