@@ -18,6 +18,11 @@ class CNC:
         # ==== = = = = = = = = 
         self.speed = 100 # vitesse pour le G0 déplacement rapide 
 
+        # max distence = lenght(mm)* 40
+        self.max_x = 8000
+        self.max_y = 7900 # modifier !!! orginal = 6000
+        self.max_z = 4000
+
         # ------------------------------------ Pausition 0 locale
         self.x0 = 0  
         self.y0 = 0
@@ -50,7 +55,7 @@ class CNC:
         speed = 200
         x , y , z = 0 , 0 , 0  #initilaliser au 0 locale 
         d , j = 0, 0
-        minx , miny , maxx , maxy = 8000 ,7900,0,0
+        minx , miny , maxx , maxy = self.max_x ,self.max_y,0,0
         ordre = []
         for i in instru:
             word = i.split(' ')
@@ -90,13 +95,13 @@ class CNC:
                         ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
                         posx = int(x*40 + self.x0)
                         posy = int(y*40 + self.y0 )   
-                        if  (abs(z*40) + abs(self.z0) > 4000): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
+                        if  (abs(z*40) + abs(self.z0) > self.max_z): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
                             print('Dépasse axe Z' , z)
                             return ['Dépasse axe Z']
-                        if (posx > 8000 or posx < 0):
+                        if (posx > self.max_x or posx < 0):
                             print('hors max X')
                             return ['hors max X']
-                        if (posy > 7900 or posy < 0): 
+                        if (posy > self.max_y or posy < 0): 
                             print('hors max y')
                             return['hors max y']
                         if (posx > maxx): maxx = round( posx, -1)
@@ -110,37 +115,40 @@ class CNC:
                 posx = int(x*40 + self.x0) # variable hors plateau
                 posy = int(y*40 + self.y0 )
                 
-                if  (abs(z*40) + abs(self.z0) > 4000): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
+                if  (abs(z*40) + abs(self.z0) > self.max_z): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
                     print('Dépasse axe Z' , z)
                     return ['Dépasse axe Z']
-                if (posx > 8000 or posx < 0):
+                if (posx > self.max_x):
                     print('hors max X')
                     return ['hors max X']
-                if (posy > 7900 or posy < 0): 
+                if (posx < 0):
+                    return ['hors min X']
+                if (posy > self.max_y ): 
                     print('hors max y')
                     return['hors max y']
+                if (posy < 0):
+                    return['hors min y']
                 if (posx > maxx): maxx = round( posx, -1)
                 if (posx < minx) : minx = round( posx, -1)
 
                 if (posy > maxy): maxy = round( posy, -1)
                 if (posy < miny) : miny = round( posy, -1)
         #faire le dessin de la zone 
-        if (self.z0 > 200): retract = 10
+        if (self.z0 > 200): retract = 40 # pour 1 cm
         else : retract = 0
-        if(minx != 8000 or miny != 7900 ):
-            maxx = int(maxx/40)
-            minx = int(minx/40)
-            maxy = int(maxy/40)
-            miny = int(miny/40)
-            self.go_to(int(self.x0/40),int(self.y0/40 ),(int(self.z0/40)- retract))
-            self.go_to(minx,miny,(int(self.z0/40)- retract))  # -5 pou eviter que la téte ne fortte 
-            self.go_to(minx,maxy,(int(self.z0/40)- retract))
-            self.go_to(maxx,maxy,(int(self.z0/40)- retract))
-            self.go_to(maxx, miny,(int(self.z0/40)- retract))
-            self.go_to(minx,miny,(int(self.z0/40)- retract))
+        if(minx != self.max_x or miny != self.max_y ):
+            print("what??")
+            print(maxx , " ", maxy)
+            self.go_to_machin(self.x0,self.y0,(self.z0 - retract))
+            self.go_to_machin(minx,miny,(self.z0-retract))
+            self.go_to_machin(minx,maxy,(self.z0 -retract))
+            self.go_to_machin(maxx,maxy,(self.z0 -retract))
+            self.go_to_machin(maxx,miny,(self.z0 -retract))
+            self.go_to_machin(minx,minx,(self.z0 -retract))
+
         return ordre
 
-    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=1):
+    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=4):
         cx = x_start + i
         cy = y_start + j
         r = np.sqrt(i**2 + j**2)
@@ -244,25 +252,31 @@ class CNC:
         
     def go_to(self,X:int,Y:int,Z:int) -> str:
         if (self.state == True ):
-            if (X < 0 or X > 200):
+            if (X < 0 or X > int(self.max_x/40)):
                 return ("x en dehors du plateau")
-            elif (Y < 0 or Y > 150):
+            elif (Y < 0 or Y > int(self.max_y/40)):
                 return ("Y en dehors du plateau")
-            elif (Z < 0 or Z > 100):
+            elif (Z < 0 or Z > int(self.max_z/40)):
                 return ("z en dehors du plateau")
             else:
+                x = int(x) # aprés la comparaisont z peut devenir un flaout 
+                y = int(y)
+                z = int(z)
                 return self.send_position(f"@0M {X*40},{self.speed},{Y*40},{self.speed},{-abs(Z*40)},{self.speed},{-abs(Z*40)},{self.speed}\r")
         else: print('machine non dispo')
 
     def go_to_machin(self,x:int,y:int,z:int)-> str: # problemme 
         if (self.state == True ):
-            if (x < 0 or x > 8000):  
+            if (x < 0 or x > self.max_x):  
                 return ("x en dehors du plateau")
-            elif (y < 0 or y > 7900):
+            elif (y < 0 or y > self.max_y):
                 return ("Y en dehors du plateau")
-            elif (z < 0 or z > 4000):
+            elif (z < 0 or z > self.max_z):
                 return ("z en dehors du plateau")
             else:
+                x = int(x) # aprés la comparaisont z peut devenir un flaout 
+                y = int(y)
+                z = int(z)
                 #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
         else: print('machine non dispo')
@@ -279,17 +293,17 @@ class CNC:
         return self.commande("@0R7\r")
 
     def move_X(self , X: int) -> str:
-        if ( (self.x + (X*40)) > 0 or (self.x + (X*40)) < 8000):
+        if ( (self.x + (X*40)) > 0 or (self.x + (X*40)) < self.max_x):
             return self.go_to_machin(int(self.x + X*40), int(self.y) , int(self.z))
         else: print("Position x invalide")
         
     def move_Y(self, Y: int) -> str:
-        if (self.y + (Y * 40)) > 0 or (self.y + (Y * 40) < 7900):
+        if (self.y + (Y * 40)) > 0 or (self.y + (Y * 40) < self.max_y):
             return self.go_to_machin( int(self.x), int(self.y + Y*40),  int(self.z))
         else: print("Position y invalide")
 
     def move_Z(self, Z: int) -> str:
-        if (self.z + (Z * 40)) > 0 or (self.z + (Z * 40) < 4000):
+        if (self.z + (Z * 40)) > 0 or (self.z + (Z * 40) < self.max_z):
             return self.go_to_machin( int(self.x),  int(self.y), int(self.z + Z ))
         else: print("Position Z invalide")
     
@@ -332,6 +346,7 @@ class CNC:
             elif retour == "4":
                 return("/" + retour + "/ axis not defind")
             elif retour == "7":
+                print("/" + retour + "/ illegal parametre")
                 return("/" + retour + "/ illegal parametre")
             elif retour == "H":
                 return("/" + retour + "/ Panneau ouvert")

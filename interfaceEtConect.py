@@ -238,7 +238,7 @@ class CNCInterface:
         self.tooltips[self.start_tool_button].update_text("Start Tool")
         self.tooltips[self.stop_tool_button].update_text("Stop Tool")
         self.tooltips[self.stop_button].update_text("Stop")
-
+ 
     def setup_grid(self):
         for i in range(6):  # Changed from 7 to 6 because we placed tool control buttons in the same row
             self.master.grid_rowconfigure(i, weight=1)
@@ -319,7 +319,7 @@ class CNCInterface:
                 elif ( command == 'G1' or command =='G01'):
                     points_g1.append((new_x, new_y, new_z))
                 elif command in ('G2', 'G02', 'G3', 'G03'):
-                    arc_points = self.generate_arc(x, y, z, new_x, new_y, new_z, i, j, command in ('G2', 'G02'))
+                    arc_points = self.briot.generate_arc(x, y, z, new_x, new_y, new_z, i, j, command in ('G2', 'G02'),points_per_unit=1)
                     points_arc.extend(arc_points)
 
                 x, y, z = new_x, new_y, new_z
@@ -352,30 +352,9 @@ class CNCInterface:
             print("No G-code commands found to plot.")
             return
     
-    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, num_points=20):
-            cx = x_start + i
-            cy = y_start + j
-            r = np.sqrt(i**2 + j**2)
-
-            start_angle = np.arctan2(y_start - cy, x_start - cx)
-            end_angle = np.arctan2(y_end - cy, x_end - cx)
-
-            if clockwise:
-                if end_angle > start_angle:
-                    end_angle -= 2 * np.pi
-            else:
-                if end_angle < start_angle:
-                    end_angle += 2 * np.pi
-
-            arc = np.linspace(start_angle, end_angle, num=num_points)
-            x_arc = cx + r * np.cos(arc)
-            y_arc = cy + r * np.sin(arc)
-            z_arc = np.linspace(z_start, z_end, num=num_points)  # Interpolating Z values
-
-            return list(zip(x_arc, y_arc, z_arc))
 
     def load_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("GCode files", "*.*",)])
+        file_path = filedialog.askopenfilename(filetypes=[("GCode files", "*.gcode"), ("NetCDF files", "*.nc"), ("All files", "*.*")])
         try :
             self.file = self.briot.Read_gcode(file_path) # ne pas faire confiance a l'utilisateur 
             self.parse_plot_gcode(self.file)
@@ -402,18 +381,17 @@ class CNCInterface:
                 self.message_text.see(tk.END)
 
     def start_cut(self):
-        if (isinstance(self.infoTool,bool)):
+        if (self.file == None):
+            messagebox.showerror("Error File" , "Fichier non charger ou non compris")
+        elif (isinstance(self.infoTool,bool) ):
             self.disable_buttons("In prosses")
             self.message_text.insert(tk.END, "Découpe commencée\n")
             self.message_text.see(tk.END)
             self.update_progress_bar(0)
             self.briot.initialize_log_file()
-
             self.start_button = ttk.Button(self.master, text="information découpe", image=self.img_visu, compound='left' , command=lambda: self.open_Visualisation()) # remplacer pour faire apparaitre la fenaitre avec plus d'information
             self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
-            
             self.stop_event.clear()  # Assurez-vous que l'événement d'arrêt est effacé
-
             self.cut_thread = threading.Thread(target=self.run_cut_process)
             self.cut_thread.daemon = True  # Définir le thread comme daemon
             self.cut_thread.start()  
@@ -434,7 +412,7 @@ class CNCInterface:
         self.message_text.see(tk.END)
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
-        self.start_button.state(['disabled'])
+        self.start_button.state(['disabled']) 
         self.enable_buttons()
 
     def stop(self):
