@@ -272,6 +272,8 @@ class CNC:
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
+            self.__order__("@07\r")
+            self.__order__("@0R7")
             sorti = self._commander_("@07\r")
             print("Initialisation Connection: " , sorti )
             self._commander_("@0B1,1\r")
@@ -333,6 +335,13 @@ class CNC:
                 log.write("Log de commandes CNC\n")
         except IOError as e:
             print(f"Erreur lors de l'initialisation du fichier de logs : {e}")
+    
+    def __order__(self, ordre : str)-> None:
+        try:
+            self.ser.write(ordre.encode('utf-8'))
+        except serial.SerialException as e:
+            print("erreu envoi:", e)
+
 
     def _commander_(self, instruction: str) -> str: #ordre direct sans vérificateion de connection pas de possition
         try:
