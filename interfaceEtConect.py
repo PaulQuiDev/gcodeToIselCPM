@@ -319,7 +319,7 @@ class CNCInterface:
                 elif ( command == 'G1' or command =='G01'):
                     points_g1.append((new_x, new_y, new_z))
                 elif command in ('G2', 'G02', 'G3', 'G03'):
-                    arc_points = self.briot.generate_arc(x, y, z, new_x, new_y, new_z, i, j, command in ('G2', 'G02'),points_per_unit=1)
+                    arc_points = self.briot.generate_arc_Z(x, y, z, new_x, new_y, new_z, i, j, command in ('G2', 'G02'),points_per_unit=1)
                     points_arc.extend(arc_points)
 
                 x, y, z = new_x, new_y, new_z
@@ -413,13 +413,17 @@ class CNCInterface:
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.start_button.state(['disabled']) 
-        self.enable_buttons()
+        self.stop_button = ttk.Button(self.master, text="Plateau Disponible", command=self.stop  , style="Stop.TButton")
+        self.stop_button.grid(row=5, column=0, padx=10, pady=10, sticky="nsew")
+         
 
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
+        self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
+        self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.enable_buttons()
 
     def connect(self):

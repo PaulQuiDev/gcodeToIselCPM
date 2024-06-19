@@ -88,27 +88,31 @@ class CNC:
                     #self.afficher_instruction(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r",ende='\n\n')
                     
                 elif (word[0] in ('G2', 'G02', 'G3', 'G03')): # boucle qui génere les arrondies 
-                    arc_points = self.generate_arc(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'))
-                    for ptRotate in arc_points: # vérification des arrondies 
+                    if (old_z != z) : # les courbe en 3D ne sont pas pris en compte 
+                        arc_points = self.generate_arc_Z(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'))
+                        for ptRotate in arc_points: # vérification des arrondies 
+                            x , y , z = ptRotate[0] , ptRotate[1] , ptRotate[2]
+                            ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
+                            posx = int(x*40 + self.x0)
+                            posy = int(y*40 + self.y0 )   
+                            if  (abs(z*40) + abs(self.z0) > self.max_z): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
+                                print('Dépasse axe Z' , z)
+                                return ['Dépasse axe Z']
+                            if (posx > self.max_x or posx < 0):
+                                print('hors max X')
+                                return ['hors max X']
+                            if (posy > self.max_y or posy < 0): 
+                                print('hors max y')
+                                return['hors max y']
+                            if (posx > maxx): maxx = round( posx, -1)
+                            if (posx < minx) : minx = round( posx, -1)
 
-                        x , y , z = ptRotate[0] , ptRotate[1] , ptRotate[2]
-                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
-                        posx = int(x*40 + self.x0)
-                        posy = int(y*40 + self.y0 )   
-                        if  (abs(z*40) + abs(self.z0) > self.max_z): #les axes sont dans le positif et ne dépasses pas le Volument de l'imprimente
-                            print('Dépasse axe Z' , z)
-                            return ['Dépasse axe Z']
-                        if (posx > self.max_x or posx < 0):
-                            print('hors max X')
-                            return ['hors max X']
-                        if (posy > self.max_y or posy < 0): 
-                            print('hors max y')
-                            return['hors max y']
-                        if (posx > maxx): maxx = round( posx, -1)
-                        if (posx < minx) : minx = round( posx, -1)
-        
-                        if (posy > maxy): maxy = round( posy, -1)
-                        if (posy < miny) : miny = round( posy, -1)
+                            if (posy > maxy): maxy = round( posy, -1)
+                            if (posy < miny) : miny = round( posy, -1)
+                    else : 
+                        #print('cercle avec isle')
+                        arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02'))
+                        ordre.extend(arc)
                 else :
                     print('Commande Non Pris en compte ' , i)
 
@@ -137,8 +141,6 @@ class CNC:
         if (self.z0 > 200): retract = 40 # pour 1 cm
         else : retract = 0
         if(minx != self.max_x or miny != self.max_y ):
-            print("what??")
-            print(maxx , " ", maxy)
             self.go_to_machin(self.x0,self.y0,(self.z0 - retract))
             self.go_to_machin(minx,miny,(self.z0-retract))
             self.go_to_machin(minx,maxy,(self.z0 -retract))
@@ -148,7 +150,7 @@ class CNC:
 
         return ordre
 
-    def generate_arc(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=4):
+    def generate_arc_Z(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=4):
         cx = x_start + i
         cy = y_start + j
         r = np.sqrt(i**2 + j**2)
@@ -172,6 +174,101 @@ class CNC:
         z_arc = np.linspace(z_start, z_end, num=num_points)  # Interpolating Z values
 
         return list(zip(x_arc, y_arc, z_arc))
+
+    def Arc_to_c142(self, old_x: float, old_y: float , X_end: float , Y_end : float , I : float , J : float ,speed : int ,clockwise : bool) -> list:
+    
+        # Calculate the center of the arc ,global coordonner 
+        Xarc = old_x + I
+        Yarc = old_y + J
+        
+        # Calculate the radius
+        radius = np.sqrt(I**2 + J**2)
+        R = radius *40
+        
+        alpha = np.arctan2(-J, -I)  # Start angle
+        #print("alpha " , np.degrees(alpha))
+        betha = np.arctan2(Y_end - Yarc, X_end - Xarc)  # End angle   pas bonne ================================================
+        #print("beta " , np.degrees(betha))
+    
+        if alpha < 0:
+            alpha += 2 * np.pi
+        if betha < 0:
+            betha += 2 * np.pi
+    
+        
+         # Calculate the angle difference
+        if clockwise:
+            if betha > alpha:
+                betha -= 2 * np.pi
+        else:
+            if alpha > betha:
+                alpha -= 2 * np.pi
+    
+        
+        #print("alpha " , np.degrees(alpha))
+        #print("beta " , np.degrees(betha))
+    
+        total_angle = abs(betha - alpha)
+    
+        # Calculate B for each quadrant
+        def quadrant_steps(angle1, angle2, radius):
+            delta_x = radius * (np.cos(angle2) - np.cos(angle1))
+            delta_y = radius * (np.sin(angle2) - np.sin(angle1))
+            return abs(delta_x) + abs(delta_y)
+    
+        # Divide the arc into segments in each quadrant
+        steps = 0
+        current_angle = alpha
+        while True:
+            next_angle = np.floor(current_angle / (np.pi / 2)) * (np.pi / 2) + (np.pi / 2)
+            if clockwise:
+                if next_angle > alpha:
+                    next_angle -= 2 * np.pi
+                if next_angle < betha:
+                    next_angle = betha
+            else:
+                if next_angle < alpha:
+                    next_angle += 2 * np.pi
+                if next_angle > betha:
+                    next_angle = betha
+    
+            steps += quadrant_steps(current_angle, next_angle, R)
+            if next_angle == betha:
+                break
+            current_angle = next_angle
+    
+        B = int(steps)
+    
+        # Calculate start coordinates relative to the center
+        X_start = int(R * np.cos(alpha))
+        Y_start = int(R * np.sin(alpha))
+    
+        # Determine Rx and Ry
+        if I <= 0:
+            Rx = -1
+        else:
+            Rx = 1
+        if J <= 0:
+            Ry = 1
+        else:
+            Ry = -1
+    
+        if clockwise:
+            Rx = -Rx
+            Ry = -Ry
+    
+        # Speed and error factor (placeholders)
+        # steps/second, example value
+        E = int(Rx * Ry * (X_start * (X_start - Rx) + Y_start * (Y_start - Ry) - R**2) // 2)  # error factor, example value
+    
+        c_command = []
+        if (clockwise == True): c_command.append("@0f1\r")
+        else : c_command.append("@0f-1\r")
+        # Construct the C-142 command
+        c_command.append( f"@0y {B},{speed},{E},{X_start},{Y_start},{Rx},{Ry}\r")
+    
+        return c_command
+
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
@@ -212,8 +309,9 @@ class CNC:
             try:
                 self.ser.write(instruction.encode('utf-8'))
                 instru = instruction.split(',')
-                self.x , self.y , self.z = float(instru[0][4:]) , float(instru[2]) , abs(float(instru[4]))
-                self.log_position(f"X{self.x},Y{self.y},Z{-self.z}")
+                if (instruction[:3] == "@0M") :
+                    self.x , self.y , self.z = float(instru[0][4:]) , float(instru[2]) , abs(float(instru[4]))
+                    self.log_position(f"X{self.x},Y{self.y},Z{-self.z}")
                 return self.Read_machine_message()
             except serial.SerialException as e:
                 return ("Erreur lors de l'envoi de l'instruction sur le port série :", e)
@@ -259,9 +357,9 @@ class CNC:
             elif (Z < 0 or Z > int(self.max_z/40)):
                 return ("z en dehors du plateau")
             else:
-                x = int(x) # aprés la comparaisont z peut devenir un flaout 
-                y = int(y)
-                z = int(z)
+                X = int(X) # aprés la comparaisont z peut devenir un flaout 
+                Y = int(Y)
+                Z = int(Z)
                 return self.send_position(f"@0M {X*40},{self.speed},{Y*40},{self.speed},{-abs(Z*40)},{self.speed},{-abs(Z*40)},{self.speed}\r")
         else: print('machine non dispo')
 
@@ -339,8 +437,8 @@ class CNC:
                 return("/" + retour + "/ Erreur Coordonner Hors plateau ou emergency tsop")
             elif retour == "9":
                 return("/" + retour + "/ Erreur Alimentation couper")
-            elif retour == "5":
-                return("/" + retour + "/ Erreur Bouton stop presser (esseyer de redemarer la machine)")
+            elif retour == "5": 
+                return("/" + retour + "/ Erreur Bouton stop presser (esseyer de redemarer la machine) ou sintax error")
             elif retour == "3":
                 return("/" + retour + "/ illegal number of axes")
             elif retour == "4":
@@ -361,7 +459,7 @@ if __name__ == "__main__":
 
     briot.DefSpeed(35)
 
-    briot.go_to(20,20,20)
+    briot.go_to_machin(1000,2500,200)
     briot.SetLocal0()
     print(briot.move_X(5))
 
@@ -371,6 +469,9 @@ if __name__ == "__main__":
     gcode = briot.Read_gcode('Holder.nc')
     ordre = briot.generate_order(gcode)
     
+    for i in ordre :
+        print(i)
+        print(briot.send_position(i), end="\n\n")
 
     briot.Stop_Tool()
 
