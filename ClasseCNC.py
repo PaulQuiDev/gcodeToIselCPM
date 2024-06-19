@@ -273,7 +273,7 @@ class CNC:
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
             self.__order__("@07\r")
-            self.__order__("@0R7")
+            self.__order__("@0R7\r")
             sorti = self._commander_("@07\r")
             print("Initialisation Connection: " , sorti )
             self._commander_("@0B1,1\r")
