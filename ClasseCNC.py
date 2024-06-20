@@ -208,64 +208,46 @@ class CNC:
         #print("alpha " , np.degrees(alpha))
         #print("beta " , np.degrees(betha))
     
-        total_angle = abs(betha - alpha)
+        #total_angle = abs(betha - alpha)
     
-        # Calculate B for each quadrant
-        def quadrant_steps(angle1, angle2, radius):
-            delta_x = radius * (np.cos(angle2) - np.cos(angle1))
-            delta_y = radius * (np.sin(angle2) - np.sin(angle1))
-            return abs(delta_x) + abs(delta_y)
-    
-        # Divide the arc into segments in each quadrant
-        steps = 0
-        current_angle = alpha
-        while True:
-            next_angle = np.floor(current_angle / (np.pi / 2)) * (np.pi / 2) + (np.pi / 2)
-            if clockwise:
-                if next_angle > alpha:
-                    next_angle -= 2 * np.pi
-                if next_angle < betha:
-                    next_angle = betha
-            else:
-                if next_angle < alpha:
-                    next_angle += 2 * np.pi
-                if next_angle > betha:
-                    next_angle = betha
-    
-            steps += quadrant_steps(current_angle, next_angle, R)
-            if next_angle == betha:
-                break
-            current_angle = next_angle
-    
-        B = int(steps)
-    
+        B = int(round(abs((4*R*(betha-alpha))/np.pi)))
+
         # Calculate start coordinates relative to the center
         X_start = int(R * np.cos(alpha))
         Y_start = int(R * np.sin(alpha))
     
         # Determine Rx and Ry
-        if I <= 0:
-            Rx = -1
-        else:
-            Rx = 1
-        if J <= 0:
-            Ry = 1
-        else:
-            Ry = -1
-    
+        # Directions Rx and Ry
         if clockwise:
-            Rx = -Rx
-            Ry = -Ry
+            if -J > 0 and -I < 0:  # Quadrant 1 (Clockwise)
+                Rx, Ry = +1, +1
+            elif -J > 0 and -I > 0:  # Quadrant 2 (Clockwise)
+                Rx, Ry = -1, +1
+            elif -J < 0 and -I > 0:  # Quadrant 3 (Clockwise)
+                Rx, Ry = -1, -1
+            else:  # Quadrant 4 (Clockwise)
+                Rx, Ry = +1, -1
+        else:
+            if -J > 0 and -I < 0:  # Quadrant 1 (Counterclockwise)
+                Rx, Ry = -1, +1
+            elif -J > 0 and -I > 0:  # Quadrant 2 (Counterclockwise)
+                Rx, Ry = -1, -1
+            elif -J < 0 and -I > 0:  # Quadrant 3 (Counterclockwise)
+                Rx, Ry = +1, -1
+            else:  # Quadrant 4 (Counterclockwise)
+                Rx, Ry = +1, +1
+        
+        #print("aprox : " , (4*R*(betha-alpha))/np.pi)    
     
         # Speed and error factor (placeholders)
-        # steps/second, example value
+        V = 200  # steps/second, example value
         E = int(Rx * Ry * (X_start * (X_start - Rx) + Y_start * (Y_start - Ry) - R**2) // 2)  # error factor, example value
     
         c_command = []
-        if (clockwise == True): c_command.append("@0f1\r")
-        else : c_command.append("@0f-1\r")
+        if (clockwise == True): c_command.append("@0f0\r")
+        else : c_command.append("@0f-1")
         # Construct the C-142 command
-        c_command.append( f"@0y {B},{speed},{E},{X_start},{Y_start},{Rx},{Ry}\r")
+        c_command.append( f"@0y {B},{V},{E},{X_start},{Y_start},{Rx},{Ry}\r") # y not Y 
     
         return c_command
 
