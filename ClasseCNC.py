@@ -111,10 +111,28 @@ class CNC:
                             if (posy < miny) : miny = round( posy, -1)
                     else : 
                         #print('cercle avec isle')
-                        arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02'))
+                        arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02')) # la courbe est ralative pas besoint de la décaler par a port au nouveau origine
                         ordre.extend(arc)
-                        # if erro position
-                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
+                        # if error position
+                        extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40) #calcule max tu doit être en courbe absolue 
+                        if (extremum[0] > self.max_x ):
+                            print('hors max X')
+                            return ['hors max X']
+                        if (extremum[1] < 0):
+                            print('hors min X')
+                            return ['hors min X']
+                        if (extremum[2] > self.max_y ):
+                            print ('hors max Y')
+                            return ['hors max Y']
+                        if (extremum[3] < 0):
+                            print("hors min y")
+                            return ['hors min Y']
+                        if (extremum[0] > maxx): maxx = round( posx, -1)
+                        if (extremum[1] < minx) : minx = round( posx, -1)
+
+                        if (extremum[2] > maxy): maxy = round( posy, -1)
+                        if (extremum[3] < miny) : miny = round( posy, -1)
+
                 else :
                     print('Commande Non Pris en compte ' , i)
 
@@ -241,6 +259,57 @@ class CNC:
 
         return c_command
 
+    def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j):
+        # Centre de l'arc
+        cx = x_start + i
+        cy = y_start + j
+
+        # Rayon de l'arc
+        radius = np.sqrt(i**2 + j**2)
+
+        # Angles de départ et de fin
+        start_angle = np.arctan2(y_start - cy, x_start - cx)
+        end_angle = np.arctan2(y_end - cy, x_end - cx)
+
+        # Angle de départ doit être dans [0, 2*pi]
+        if start_angle < 0:
+            start_angle += 2 * np.pi
+        if end_angle < 0:
+            end_angle += 2 * np.pi
+
+        # Si l'arc passe par le 0 angle (modulo 2*pi)
+        if end_angle < start_angle:
+            end_angle += 2 * np.pi
+
+        # Fonction pour vérifier si un angle est dans la plage de l'arc
+        def is_in_arc(theta):
+            while theta < 0:
+                theta += 2 * np.pi
+            while theta >= 2 * np.pi:
+                theta -= 2 * np.pi
+            return start_angle <= theta <= end_angle
+
+        # Points candidats aux extrêmes
+        candidate_angles = [start_angle, end_angle]
+
+        # Ajouter les angles de 0, pi/2, pi, 3*pi/2 si ils sont dans la plage de l'arc
+        for angle in [0, np.pi / 2, np.pi, 3 * np.pi / 2]:
+            if is_in_arc(angle):
+                candidate_angles.append(angle)
+
+        # Calcul des positions des candidats
+        candidates = [(cx + radius * np.cos(theta), cy + radius * np.sin(theta)) for theta in candidate_angles]
+
+        # Récupération des extrêmes
+        x_values = [pt[0] for pt in candidates]
+        y_values = [pt[1] for pt in candidates]
+
+        max_x = max(x_values)
+        min_x = min(x_values)
+        max_y = max(y_values)
+        min_y = min(y_values)
+
+        return [max_x, min_x, max_y, min_y]
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
