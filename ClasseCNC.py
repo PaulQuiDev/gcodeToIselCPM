@@ -113,6 +113,8 @@ class CNC:
                         #print('cercle avec isle')
                         arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02'))
                         ordre.extend(arc)
+                        # if erro position
+                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
                 else :
                     print('Commande Non Pris en compte ' , i)
 
@@ -180,75 +182,63 @@ class CNC:
         # Calculate the center of the arc ,global coordonner 
         Xarc = old_x + I
         Yarc = old_y + J
-        
+
         # Calculate the radius
         radius = np.sqrt(I**2 + J**2)
-        R = radius *40
-        
+        R = radius * 40
+
         alpha = np.arctan2(-J, -I)  # Start angle
-        #print("alpha " , np.degrees(alpha))
-        betha = np.arctan2(Y_end - Yarc, X_end - Xarc)  # End angle   pas bonne ================================================
-        #print("beta " , np.degrees(betha))
-    
+        betha = np.arctan2(Y_end - Yarc, X_end - Xarc)  # End angle
+
+        inverse = False
         if alpha < 0:
             alpha += 2 * np.pi
         if betha < 0:
             betha += 2 * np.pi
-    
-        
-         # Calculate the angle difference
+
+
+        # Calculate the angle difference
         if clockwise:
             if betha > alpha:
                 betha -= 2 * np.pi
         else:
             if alpha > betha:
                 alpha -= 2 * np.pi
-    
-        
-        #print("alpha " , np.degrees(alpha))
-        #print("beta " , np.degrees(betha))
-    
-        #total_angle = abs(betha - alpha)
-    
-        B = int(round(abs((4*R*(betha-alpha))/np.pi)))
+
+        total_angle = abs(betha - alpha)
+        B = int(round(abs((4 * R * total_angle) / np.pi)))
 
         # Calculate start coordinates relative to the center
-        X_start = int(R * np.cos(alpha))
-        Y_start = int(R * np.sin(alpha))
-    
+        X_start = int(round(R * np.cos(alpha)))
+        Y_start = int(round(R * np.sin(alpha)))
+
+        X_s = np.degrees(np.arctan2(-J, -I))
+        print(X_s)
         # Determine Rx and Ry
-        # Directions Rx and Ry
-        if clockwise:
-            if -J > 0 and -I < 0:  # Quadrant 1 (Clockwise)
-                Rx, Ry = +1, +1
-            elif -J > 0 and -I > 0:  # Quadrant 2 (Clockwise)
-                Rx, Ry = -1, +1
-            elif -J < 0 and -I > 0:  # Quadrant 3 (Clockwise)
-                Rx, Ry = -1, -1
-            else:  # Quadrant 4 (Clockwise)
-                Rx, Ry = +1, -1
-        else:
-            if -J > 0 and -I < 0:  # Quadrant 1 (Counterclockwise)
-                Rx, Ry = -1, +1
-            elif -J > 0 and -I > 0:  # Quadrant 2 (Counterclockwise)
-                Rx, Ry = -1, -1
-            elif -J < 0 and -I > 0:  # Quadrant 3 (Counterclockwise)
-                Rx, Ry = +1, -1
-            else:  # Quadrant 4 (Counterclockwise)
-                Rx, Ry = +1, +1
-        
-        #print("aprox : " , (4*R*(betha-alpha))/np.pi)    
-    
+
+        if(X_s>= 0 and X_s<90) : Rx , Ry = -1 , 1
+        elif( X_s>= 90 ) : Rx , Ry = -1,-1
+        elif(X_s < 0 and X_s > -90 ) : Rx ,Ry = 1 , 1
+        elif (X_s <= 90 ) : Rx , Ry = 1 , -1 
+        else :
+            Rx , Ry = 1 , 1 
+            print("Error Angles")
+
+        if clockwise : Rx , Ry = -Rx , -Ry 
+
         # Speed and error factor (placeholders)
-        V = 200  # steps/second, example value
+        V = speed  # steps/second, example value
         E = int(Rx * Ry * (X_start * (X_start - Rx) + Y_start * (Y_start - Ry) - R**2) // 2)  # error factor, example value
-    
+
         c_command = []
-        if (clockwise == True): c_command.append("@0f0\r")
-        else : c_command.append("@0f-1")
+        if clockwise:
+            c_command.append("@0f0\r")
+        else:
+            c_command.append("@0f-1\r")
+
         # Construct the C-142 command
-        c_command.append( f"@0y {B},{V},{E},{X_start},{Y_start},{Rx},{Ry}\r") # y not Y 
-    
+        c_command.append(f"@0y {B},{V},{E},{X_start},{Y_start},{Rx},{Ry}\r")
+
         return c_command
 
 
