@@ -115,7 +115,7 @@ class CNCInterface:
         self.increment_1mm_button.grid(row=0, column=3, sticky="nsew")
 
         # Bouton pour définir le point 0 si pas laser juste pt 0 sinon avec laser découpe
-        if (laserReady == True) :
+        if (laserReady == False) :
             self.define_button = ttk.Button(self.master, text="Définir Point 0",compound='right', image=self.img_Pt0 ,command=self.define_point)
             self.define_button.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
         else :
