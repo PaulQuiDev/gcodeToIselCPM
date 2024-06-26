@@ -463,7 +463,7 @@ class CNCInterface:
                             laser = False 
                             self.pwm.stop()
                     except :
-                        print(f"pas laser {i} == ? {self.briot.speed} ")
+                        print(f"pas laser {self.file[i]} == ? {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 
