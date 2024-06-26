@@ -385,7 +385,7 @@ class CNCInterface:
     
 
     def load_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("GCode files", "*.gcode"), ("NetCDF files", "*.nc"), ("All files", "*.*")])
+        file_path = filedialog.askopenfilename(filetypes=[ ("NetCDF files", "*.nc"),("GCode files", "*.gcode"), ("All files", "*.*")])
         try :
             self.file = self.briot.Read_gcode(file_path) # ne pas faire confiance a l'utilisateur 
             self.parse_plot_gcode(self.file)
@@ -455,15 +455,18 @@ class CNCInterface:
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
                         self.message_text.see(tk.END)
                         break
-                    try :
+                    if ((self.file[i] in ("0f0" , "0f-1")) == False ):
                         if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
                             laser = True
                             self.pwm.start(self.laserPower)
                         elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
                             laser = False 
                             self.pwm.stop()
-                    except :
-                        print(f"pas laser {self.file[i]} == ? {self.briot.speed} ")
+                    elif(laser == False):
+                        laser == True
+                        self.pwm.start(self.laserPower)
+                    
+                    print(f"pas laser {self.file[i]} == ? {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 
