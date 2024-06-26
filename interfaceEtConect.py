@@ -297,7 +297,7 @@ class CNCInterface:
         self.img_home = ImageTk.PhotoImage(Image.open("img/home.png").resize((50,50)))
         self.img_Pt0 = ImageTk.PhotoImage(Image.open("img/spot0.png").resize((50,50)))
         self.img_visu= ImageTk.PhotoImage(Image.open("img/Visu.png").resize((50,50)))
-        self.img_laser = ImageTk.PhotoImage(Image.open("img/laser.jpg").resize((50, 50)))
+        self.img_laser = ImageTk.PhotoImage(Image.open("img/laser.png").resize((50, 50)))
 
     def move(self,  axis : str , amount: int):
         message = ""
@@ -430,15 +430,41 @@ class CNCInterface:
             messagebox.showerror("Error Tool" , "Outils non initilaliser")
         
     def run_cut_process(self):
-        for i in range(len(self.file)):
-            if self.stop_event.is_set():
-                self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
-                self.message_text.see(tk.END)
-                break
-            self.briot.send_position(self.file[i])
-            self.update_progress_bar((i*100)/len(self.file))
-            
+        if not laserReady :
+            for i in range(len(self.file)):
+                if self.stop_event.is_set():
+                    self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
+                    self.message_text.see(tk.END)
+                    break
+                self.briot.send_position(self.file[i])
+                self.update_progress_bar((i*100)/len(self.file))
 
+        else : # utilisation du laser 
+            if (self.laserPower <= 0):
+                for i in range(len(self.file)):
+                    if self.stop_event.is_set():
+                        self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
+                        self.message_text.see(tk.END)
+                        break
+                    self.briot.send_position(self.file[i])
+                    self.update_progress_bar((i*100)/len(self.file))  
+            else : # tu veux utiliser le laser 
+                laser = False
+                for i in range(len(self.file)):
+                    if self.stop_event.is_set():
+                        self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
+                        self.message_text.see(tk.END)
+                        break
+                    if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
+                        laser = True
+                        self.pwm.start(self.laserPower)
+                    elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
+                        laser = False
+                        self.pwm.stop()
+                    self.briot.send_position(self.file[i])
+                    self.update_progress_bar((i*100)/len(self.file)) 
+
+        self.pwm.stop()
         self.message_text.insert(tk.END, "Découpe terminée\n")
         self.message_text.see(tk.END)
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
@@ -452,6 +478,7 @@ class CNCInterface:
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
+        self.pwm.stop()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
@@ -533,40 +560,69 @@ class CNCInterface:
             self.message_text.insert(tk.END, f"erreur {message}\n")
             self.message_text.see(tk.END)
             self.infoTool= False
+        if laserReady == True :
+            self.pwm.stop()
         
     def laserInit(self):
         if not laserReady:
             self.message_text.insert(tk.END, "Laser non disponible, vous devez être sur Raspberry Pi sous Linux.")
         else:
-            # Fonction pour enregistrer la valeur de laserpower
-            def save_laser_power():
-                try:
-                    self.laserPower = float(entry.get())  # Récupère la valeur saisie dans l'Entry
-                    self.laserConfig.destroy()  # Ferme la fenêtre Toplevel
-                except ValueError:
-                    tk.messagebox.showerror("Erreur", "Veuillez entrer un nombre entier pour la puissance du laser.")
+
+            # Fonction pour définir la puissance du laser à l'aide d'une barre de choix
+            def set_laser_power(value):
+                self.laserPower = float(value)
+                self.message_text.insert(tk.END, f"La puissance du laser a été définie à : {self.laserPower}\n")
 
             # Création de la fenêtre Toplevel pour la configuration du laser
             self.laserConfig = tk.Toplevel(self.master)
             self.laserConfig.title("Config Laser")
+            self.laserConfig.geometry("500x300")
 
-            # Étiquette et Entry pour saisir la puissance du laser
-            label = ttk.Label(self.laserConfig, text="Puissance du laser :")
-            label.pack(padx=10, pady=10)
+            # Charger l'image pour l'arrière-plan
+            background_image = tk.PhotoImage(file="img/PowerLaser.png")
+            # Obtenir les dimensions de l'image
+            img_width = background_image.width()
+            img_height = background_image.height()
 
-            entry = ttk.Entry(self.laserConfig)
-            entry.pack(padx=10, pady=10)
+            # Étiquette pour l'arrière-plan avec l'image
+            background_label = ttk.Label(self.laserConfig, image=background_image)
+            background_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-            # Bouton pour enregistrer la puissance du laser
-            save_button = ttk.Button(self.laserConfig, text="Enregistrer", command=save_laser_power)
-            save_button.pack(padx=10, pady=10)
+            # Pour empêcher Python de supprimer l'image trop tôt, on attache une référence à l'objet.
+            background_label.image = background_image
 
-            # Attente que la fenêtre Toplevel se ferme
-            self.laserConfig.wait_window()
+            # Label pour indiquer la puissance du laser comme un titre en grand
+            label = ttk.Label(self.laserConfig, text="Puissance du Laser ", font=("Helvetica", 16, "bold"), background='grey')
+            label.place(relx=0.5, y=20, anchor=tk.CENTER)
 
-            # À ce stade, self.laserpower contient la valeur saisie par l'utilisateur
-            if hasattr(self, 'laserpower'):
-                self.message_text.insert(tk.END, f"La puissance du laser a été définie à : {self.laserpower}\n")
+            # Barre de choix (Scale) pour définir la puissance du laser
+            scale = ttk.Scale(self.laserConfig, from_=0, to=100, orient=tk.HORIZONTAL, command=set_laser_power)
+            scale.place(relx=0.5, y=60, anchor=tk.CENTER, relwidth=0.9)
+
+            # Étiquette pour afficher la valeur sélectionnée de la barre de choix
+            value_label = ttk.Label(self.laserConfig, text="0")
+            value_label.place(relx=0.5, y=100, anchor=tk.CENTER)
+
+            # Fonction pour mettre à jour la valeur affichée lorsque la barre de choix est déplacée
+            def update_value_label(value):
+                value_label.config(text=round(float(value), 1))
+
+            # Lier la fonction de mise à jour à la barre de choix (Scale)
+            scale.config(command=update_value_label)
+
+            # Bouton pour fermer la fenêtre Toplevel
+            close_button = ttk.Button(self.laserConfig, text="Fermer", command=self.closeConLaser)
+            close_button.place(relx=0.5, rely=0.9, anchor=tk.CENTER)
+
+            # Définir la taille minimale de la fenêtre pour empêcher l'arrière-plan de se redimensionner
+            self.laserConfig.update_idletasks()
+            self.laserConfig.minsize(self.laserConfig.winfo_width(), self.laserConfig.winfo_height())
+        
+    def closeConLaser(self):
+
+        self.message_text.insert(tk.END, f"Puissance Laser: {round(self.laserPower,1)}\n")
+        self.message_text.see(tk.END)       
+        self.laserConfig.destroy
 
 
     def update_progress_bar(self,value : float):
