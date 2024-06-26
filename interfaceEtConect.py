@@ -455,7 +455,7 @@ class CNCInterface:
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
                         self.message_text.see(tk.END)
                         break
-                    if ((self.file[i] in ("0f0" , "0f-1")) == False ):
+                    if ((self.file[i] in ("0f0" , "0f-1")) == False  or len(self.file)<=0):
                         if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
                             laser = True
                             self.pwm.start(self.laserPower)
