@@ -455,12 +455,15 @@ class CNCInterface:
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
                         self.message_text.see(tk.END)
                         break
-                    if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
-                        laser = True
-                        self.pwm.start(self.laserPower)
-                    elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
-                        laser = False
-                        self.pwm.stop()
+                    try :
+                        if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
+                            laser = True
+                            self.pwm.start(self.laserPower)
+                        elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
+                            laser = False 
+                            self.pwm.stop()
+                    except :
+                        print(f"pas laser {i} == ? {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 
@@ -567,10 +570,9 @@ class CNCInterface:
         if not laserReady:
             self.message_text.insert(tk.END, "Laser non disponible, vous devez être sur Raspberry Pi sous Linux.")
         else:
-
             # Fonction pour définir la puissance du laser à l'aide d'une barre de choix
             def set_laser_power(value):
-                self.laserPower = float(value)
+                value = self.laserPower
                 self.message_text.insert(tk.END, f"La puissance du laser a été définie à : {self.laserPower}\n")
 
             # Création de la fenêtre Toplevel pour la configuration du laser
@@ -600,12 +602,13 @@ class CNCInterface:
             scale.place(relx=0.5, y=60, anchor=tk.CENTER, relwidth=0.9)
 
             # Étiquette pour afficher la valeur sélectionnée de la barre de choix
-            value_label = ttk.Label(self.laserConfig, text="0")
+            value_label = ttk.Label(self.laserConfig, text=str(round(self.laserPower)))
             value_label.place(relx=0.5, y=100, anchor=tk.CENTER)
 
             # Fonction pour mettre à jour la valeur affichée lorsque la barre de choix est déplacée
             def update_value_label(value):
                 value_label.config(text=round(float(value), 1))
+                self.laserPower = float(value)
 
             # Lier la fonction de mise à jour à la barre de choix (Scale)
             scale.config(command=update_value_label)
@@ -622,7 +625,7 @@ class CNCInterface:
 
         self.message_text.insert(tk.END, f"Puissance Laser: {round(self.laserPower,1)}\n")
         self.message_text.see(tk.END)       
-        self.laserConfig.destroy
+        self.laserConfig.destroy()
 
 
     def update_progress_bar(self,value : float):
