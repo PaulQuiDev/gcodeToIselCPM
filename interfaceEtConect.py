@@ -449,14 +449,14 @@ class CNCInterface:
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file))  
             else : # tu veux utiliser le laser 
-                laser = False
+                laser = False 
                 for i in range(len(self.file)):
                     if self.stop_event.is_set():
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
                         self.message_text.see(tk.END)
                         break
                     try :
-                        if ((self.file[i] in ("0f0" , "0f-1")) == False  or len(self.file)<=0):
+                        if ((self.file[i] in ("@0f0" , "@0f-1")) == False  or len(self.file)<=0):
                             if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
                                 laser = True
                                 self.pwm.start(self.laserPower)
