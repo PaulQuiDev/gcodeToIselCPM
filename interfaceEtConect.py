@@ -456,7 +456,7 @@ class CNCInterface:
                         self.message_text.see(tk.END)
                         break
                     try :
-                        if ((self.file[i].split(' ')[0] in ("@0f0" , "@0f-1")) == False  or len(self.file)<=0): # si ce nes pas un commande pour indique les sense de rotation , et que la taille est coérente 
+                        if ((self.file[i] == "@0f1" or self.file[i] == "@0f-1") == False  or len(self.file)<=0): # si ce nes pas un commande pour indique les sense de rotation , et que la taille est coérente 
                             if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
                                 laser = True
                                 self.pwm.start(self.laserPower)
@@ -467,7 +467,7 @@ class CNCInterface:
                             laser == True
                             self.pwm.start(self.laserPower)
                     except :
-                        print(f"pas laser?? {self.file[i]} == ? {self.briot.speed} ")
+                        print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 

@@ -113,6 +113,7 @@ class CNC:
                         #print('cercle avec isle')
                         arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02')) # la courbe est ralative pas besoint de la décaler par a port au nouveau origine
                         ordre.extend(arc)
+                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
                         # if error position
                         extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40) #calcule max tu doit être en courbe absolue 
                         if (extremum[0] > self.max_x ):
@@ -256,6 +257,7 @@ class CNC:
 
         # Construct the C-142 command
         c_command.append(f"@0y {B},{V},{E},{X_start},{Y_start},{Rx},{Ry}\r")
+        c_command.append(f"@0M ")
 
         return c_command
 
@@ -304,10 +306,10 @@ class CNC:
         x_values = [pt[0] for pt in candidates]
         y_values = [pt[1] for pt in candidates]
 
-        max_x = max(x_values)
-        min_x = min(x_values)
-        max_y = max(y_values)
-        min_y = min(y_values)
+        max_x = round(max(x_values))
+        min_x = round( min(x_values))
+        max_y = round( max(y_values))
+        min_y = round( min(y_values))
 
         return [max_x, min_x, max_y, min_y]
 
