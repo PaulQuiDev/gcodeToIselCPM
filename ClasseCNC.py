@@ -113,7 +113,7 @@ class CNC:
                         #print('cercle avec isle')
                         arc = self.Arc_to_c142(old_x,old_y,x,y,d,j,speed,word[0] in ('G2', 'G02')) # la courbe est ralative pas besoint de la décaler par a port au nouveau origine
                         ordre.extend(arc)
-                        ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
+                        ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{-abs(int(z*40 - self.z0))},{speed},{-abs(int(z*40 - self.z0))},{speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
                         # if error position
                         extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40) #calcule max tu doit être en courbe absolue 
                         if (extremum[0] > self.max_x ):
