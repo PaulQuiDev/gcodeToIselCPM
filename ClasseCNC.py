@@ -257,7 +257,6 @@ class CNC:
 
         # Construct the C-142 command
         c_command.append(f"@0y {B},{V},{E},{X_start},{Y_start},{Rx},{Ry}\r")
-        c_command.append(f"@0M ")
 
         return c_command
 
