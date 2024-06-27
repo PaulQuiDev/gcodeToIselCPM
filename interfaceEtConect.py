@@ -455,18 +455,19 @@ class CNCInterface:
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
                         self.message_text.see(tk.END)
                         break
-                    if ((self.file[i] in ("0f0" , "0f-1")) == False  or len(self.file)<=0):
-                        if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
-                            laser = True
+                    try :
+                        if ((self.file[i] in ("0f0" , "0f-1")) == False  or len(self.file)<=0):
+                            if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
+                                laser = True
+                                self.pwm.start(self.laserPower)
+                            elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
+                                laser = False 
+                                self.pwm.stop()
+                        elif(laser == False):
+                            laser == True
                             self.pwm.start(self.laserPower)
-                        elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
-                            laser = False 
-                            self.pwm.stop()
-                    elif(laser == False):
-                        laser == True
-                        self.pwm.start(self.laserPower)
-                    
-                    print(f"pas laser {self.file[i]} == ? {self.briot.speed} ")
+                    except :
+                        print(f"pas laser?? {self.file[i]} == ? {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 
