@@ -425,6 +425,7 @@ class CNCInterface:
             self.update_progress_bar(0)
             self.briot.initialize_log_file()
             self.start_button.config(text="information découpe", image=self.img_visu, compound='left', command=self.open_Visualisation)
+            self.start_button.state(['!disabled'])
             self.stop_event.clear()  # Assurez-vous que l'événement d'arrêt est effacé
             self.cut_thread = threading.Thread(target=self.run_cut_process)
             self.cut_thread.daemon = True  # Définir le thread comme daemon
@@ -494,7 +495,8 @@ class CNCInterface:
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
-        self.enable_buttons() 
+        self.stop_button.config( text="Arrêt STOP") 
+        self.tooltips[self.stop_button].update_text("Stop")
     def connect(self):
         if(self.briot.ser == None):
             if platform.system() == 'Linux': # autre méthode de port sur linux
