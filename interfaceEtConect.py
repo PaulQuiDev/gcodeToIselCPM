@@ -424,7 +424,7 @@ class CNCInterface:
             self.message_text.see(tk.END)
             self.update_progress_bar(0)
             self.briot.initialize_log_file()
-            self.start_button.config(self.master, text="information découpe", image=self.img_visu, compound='left' , command=lambda: self.open_Visualisation()) # remplacer pour faire apparaitre la fenaitre avec plus d'information
+            self.start_button.config(text="information découpe", image=self.img_visu, compound='left', command=self.open_Visualisation)
             self.stop_event.clear()  # Assurez-vous que l'événement d'arrêt est effacé
             self.cut_thread = threading.Thread(target=self.run_cut_process)
             self.cut_thread.daemon = True  # Définir le thread comme daemon
@@ -478,11 +478,11 @@ class CNCInterface:
         self.pwm.stop()
         self.message_text.insert(tk.END, "Découpe terminée\n")
         self.message_text.see(tk.END)
-        self.start_button.config(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
+        self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.state(['disabled']) 
         self.tooltips[self.start_button].update_text("Start Cut \n")
 
-        self.stop_button.config(self.master, text="Plateau Disponible", command=self.stop  , style="Stop.TButton")
+        self.stop_button.config( text="Plateau Disponible", command=self.stop  , style="Stop.TButton")
         self.tooltips[self.stop_button].update_text("relancer")
 
         self.update_progress_bar(0)
@@ -493,8 +493,7 @@ class CNCInterface:
         self.pwm.stop()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
-        self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
-        self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+        self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.enable_buttons() 
     def connect(self):
         if(self.briot.ser == None):
