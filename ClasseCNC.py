@@ -116,6 +116,7 @@ class CNC:
                         ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{-abs(int(z*40 - self.z0))},{speed},{-abs(int(z*40 - self.z0))},{speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
                         # if error position
                         extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40) #calcule max tu doit être en courbe absolue 
+                        print("extremumin" , extremum)
                         if (extremum[0] > self.max_x ):
                             print('hors max X')
                             return ['hors max X']
