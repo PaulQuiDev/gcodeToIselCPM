@@ -491,7 +491,7 @@ class CNCInterface:
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
-        self.pwm.stop()
+        if (laserReady == True)  :self.pwm.stop()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)

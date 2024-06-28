@@ -116,7 +116,7 @@ class CNC:
                         ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{-abs(int(z*40 - self.z0))},{speed},{-abs(int(z*40 - self.z0))},{speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
                         # if error position
                         extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40,word[0] in ('G2', 'G02')) #calcule max tu doit être en courbe absolue 
-                        print("extremumin" , extremum)
+                        
                         if (extremum[0] > self.max_x ):
                             print('hors max X')
                             return ['hors max X']
@@ -268,10 +268,14 @@ class CNC:
         return c_command
 
     def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j, clockwise=True):
-        pt = self.generate_arc_Z( x_start, y_start,0, x_end, y_end,0, i, j, clockwise , num_points=5)
+        pt = self.generate_arc_Z( x_start, y_start,0, x_end, y_end,0, i, j, clockwise , num_points=10)
 
-        x_values = pt[:][0]
-        y_values = pt[:][1]
+        x_values , y_values  = [] , []
+        
+        for i in pt :
+            x_values.append( i[0])
+            y_values.append( i[1])
+
         # Calculer les extrêmes arrondis
         max_x = int(round(max(x_values)))
         min_x = int(round(min(x_values)))
