@@ -471,6 +471,7 @@ class CNCInterface:
                             laser == True
                             self.pwm.start(self.laserPower)
                     except :
+                        
                         print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
@@ -481,8 +482,12 @@ class CNCInterface:
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.start_button.state(['disabled']) 
+        self.tooltips[self.start_button].update_text("Start Cut \n")
+
         self.stop_button = ttk.Button(self.master, text="Plateau Disponible", command=self.stop  , style="Stop.TButton")
         self.stop_button.grid(row=5, column=0, padx=10, pady=10, sticky="nsew")
+        self.tooltips[self.stop_button].update_text("relancer")
+
         self.update_progress_bar(0)
          
     def stop(self):
@@ -493,8 +498,7 @@ class CNCInterface:
         self.message_text.see(tk.END)
         self.start_button = ttk.Button(self.master, text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.start_button.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
-        self.enable_buttons()
-
+        self.enable_buttons() 
     def connect(self):
         if(self.briot.ser == None):
             if platform.system() == 'Linux': # autre méthode de port sur linux
