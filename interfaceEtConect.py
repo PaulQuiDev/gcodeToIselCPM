@@ -604,7 +604,7 @@ class CNCInterface:
 
             # Barre de choix (Scale) pour définir la puissance du laser
             scale = ttk.Scale(self.laserConfig, from_=-1, to=100, orient=tk.HORIZONTAL, command=set_laser_power)
-            scale.place(relx=0.5, y=60, anchor=tk.CENTER, relwidth=0.95 , height=40)
+            scale.place(relx=0.5, y=60, anchor=tk.CENTER, relwidth=0.95)
 
             # Étiquette pour afficher la valeur sélectionnée de la barre de choix
             value_label = ttk.Label(self.laserConfig, text=str(round(self.laserPower)))
@@ -612,7 +612,7 @@ class CNCInterface:
 
             # Fonction pour mettre à jour la valeur affichée lorsque la barre de choix est déplacée
             def update_value_label(value):
-                if (value <= 0 ):
+                if (float(value) <= 0 ):
                     value_label.config(text="Déactiver")
                     self.laserPower = -1
                 else :
