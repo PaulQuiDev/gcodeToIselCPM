@@ -237,7 +237,7 @@ class CNC:
         Y_start = int(round(R * np.sin(alpha)))
 
         X_s = np.degrees(np.arctan2(-J, -I))
-        print(X_s)
+        #print(X_s)
         # Determine Rx and Ry
 
         if(X_s>= 0 and X_s<90) : Rx , Ry = -1 , 1
