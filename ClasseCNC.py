@@ -268,54 +268,10 @@ class CNC:
         return c_command
 
     def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j, clockwise=True):
-        # Centre de l'arc
-        cx = x_start + i
-        cy = y_start + j
+        pt = self.generate_arc_Z( x_start, y_start,0, x_end, y_end,0, i, j, clockwise , num_points=5)
 
-        # Rayon de l'arc
-        radius = np.sqrt(i**2 + j**2)
-
-        # Angles de départ et de fin
-        start_angle = np.arctan2(y_start - cy, x_start - cx)
-        end_angle = np.arctan2(y_end - cy, x_end - cx)
-
-        # Normalisation des angles dans l'intervalle [0, 2*pi]
-        if start_angle < 0:
-            start_angle += 2 * np.pi
-        if end_angle < 0:
-            end_angle += 2 * np.pi
-
-        # Si l'arc passe par le 0 angle (modulo 2*pi)
-        if end_angle < start_angle:
-            end_angle += 2 * np.pi
-
-        # Ajustement selon le sens de l'arc
-        if not clockwise:
-            start_angle, end_angle = end_angle, start_angle
-
-        # Fonction pour vérifier si un angle est dans la plage de l'arc
-        def is_in_arc(theta):
-            while theta < 0:
-                theta += 2 * np.pi
-            while theta >= 2 * np.pi:
-                theta -= 2 * np.pi
-            return start_angle <= theta <= end_angle
-
-        # Points candidats aux extrêmes
-        candidate_angles = [start_angle, end_angle]
-
-        # Ajouter les angles de 0, pi/2, pi, 3*pi/2 si ils sont dans la plage de l'arc
-        for angle in [0, np.pi / 2, np.pi, 3 * np.pi / 2]:
-            if is_in_arc(angle):
-                candidate_angles.append(angle)
-
-        # Calcul des positions des candidats
-        candidates = [(cx + radius * np.cos(theta), cy + radius * np.sin(theta)) for theta in candidate_angles]
-
-        # Récupération des extrêmes
-        x_values = [pt[0] for pt in candidates]
-        y_values = [pt[1] for pt in candidates]
-
+        x_values = pt[:][0]
+        y_values = pt[:][1]
         # Calculer les extrêmes arrondis
         max_x = int(round(max(x_values)))
         min_x = int(round(min(x_values)))
