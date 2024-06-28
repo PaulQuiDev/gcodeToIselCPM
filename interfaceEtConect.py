@@ -585,6 +585,9 @@ class CNCInterface:
             self.laserConfig.title("Config Laser")
             self.laserConfig.geometry("500x300")
 
+             # Définir une taille minimale pour la fenêtre
+            self.laserConfig.wm_minsize(400, 200)
+
             # Charger l'image pour l'arrière-plan
             background_image = tk.PhotoImage(file="img/PowerLaser.png")
             # Obtenir les dimensions de l'image
