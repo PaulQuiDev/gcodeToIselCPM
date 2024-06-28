@@ -115,7 +115,7 @@ class CNC:
                         ordre.extend(arc)
                         ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{-abs(int(z*40 - self.z0))},{speed},{-abs(int(z*40 - self.z0))},{speed}\r") # si plusieur secrl d'affiler reduit l'erreur 
                         # if error position
-                        extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40) #calcule max tu doit être en courbe absolue 
+                        extremum = self.calculate_extremes(old_x*40 + self.x0 ,old_y*40 + self.y0 ,x*40+ self.x0,y*40+ self.y0,d*40,j*40,word[0] in ('G2', 'G02')) #calcule max tu doit être en courbe absolue 
                         print("extremumin" , extremum)
                         if (extremum[0] > self.max_x ):
                             print('hors max X')
@@ -177,7 +177,7 @@ class CNC:
 
         return ordre
 
-    def generate_arc_Z(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=4):
+    def generate_arc_Z(self, x_start, y_start, z_start, x_end, y_end, z_end, i, j, clockwise, points_per_unit=4 ,num_points = -1):
         cx = x_start + i
         cy = y_start + j
         r = np.sqrt(i**2 + j**2)
@@ -193,7 +193,8 @@ class CNC:
                 end_angle += 2 * np.pi
 
         arc_length = abs(end_angle - start_angle) * r
-        num_points = max(int(arc_length * points_per_unit), 2)  # Ensure at least 2 points
+        if (num_points == -1) :
+            num_points = max(int(arc_length * points_per_unit), 2)  # Ensure at least 2 points
 
         arc = np.linspace(start_angle, end_angle, num=num_points)
         x_arc = cx + r * np.cos(arc)
@@ -266,7 +267,7 @@ class CNC:
 
         return c_command
 
-    def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j)-> list:
+    def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j, clockwise=True):
         # Centre de l'arc
         cx = x_start + i
         cy = y_start + j
@@ -278,7 +279,7 @@ class CNC:
         start_angle = np.arctan2(y_start - cy, x_start - cx)
         end_angle = np.arctan2(y_end - cy, x_end - cx)
 
-        # Angle de départ doit être dans [0, 2*pi]
+        # Normalisation des angles dans l'intervalle [0, 2*pi]
         if start_angle < 0:
             start_angle += 2 * np.pi
         if end_angle < 0:
@@ -287,6 +288,10 @@ class CNC:
         # Si l'arc passe par le 0 angle (modulo 2*pi)
         if end_angle < start_angle:
             end_angle += 2 * np.pi
+
+        # Ajustement selon le sens de l'arc
+        if not clockwise:
+            start_angle, end_angle = end_angle, start_angle
 
         # Fonction pour vérifier si un angle est dans la plage de l'arc
         def is_in_arc(theta):
@@ -311,12 +316,14 @@ class CNC:
         x_values = [pt[0] for pt in candidates]
         y_values = [pt[1] for pt in candidates]
 
+        # Calculer les extrêmes arrondis
         max_x = int(round(max(x_values)))
-        min_x = int(round( min(x_values)))
-        max_y = int(round( max(y_values)))
-        min_y = int( round( min(y_values)))
+        min_x = int(round(min(x_values)))
+        max_y = int(round(max(y_values)))
+        min_y = int(round(min(y_values)))
 
         return [max_x, min_x, max_y, min_y]
+
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
@@ -490,7 +497,7 @@ class CNC:
                 return("/" + retour + "/ Erreur Machine non démarer")
             elif retour == "2" :  
                 print("essay home position :",end="")
-                self._commander_("@0R7")
+                self.AutoHome()
                 return("/" + retour + "/ Erreur Coordonner Hors plateau ou emergency tsop")
             elif retour == "9":
                 return("/" + retour + "/ Erreur Alimentation couper")
