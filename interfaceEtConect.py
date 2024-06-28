@@ -211,6 +211,9 @@ class CNCInterface:
         self.start_button.state(['disabled'])
         self.start_tool_button.state(['disabled'])
         self.stop_tool_button.state(['disabled'])
+
+        if (laserReady == True):
+            self.laserBp.state(['disabled'])
     
         # Mettre à jour les infobulles pour indiquer que l'imprimante n'est pas connectée
         self.tooltips[self.x_minus_button].update_text("-X \n" + message)
@@ -248,6 +251,9 @@ class CNCInterface:
         self.start_tool_button.state(['!disabled'])
         self.stop_tool_button.state(['!disabled'])
         self.stop_button.state(['!disabled'])
+
+        if (laserReady == True):
+            self.laserBp.state(['!disabled'])
 
         # Restaurer les infobulles originales
         self.tooltips[self.x_minus_button].update_text("-X")
@@ -318,7 +324,6 @@ class CNCInterface:
         self.message_text.insert(tk.END, f"Point 0 défini at X:{self.briot.x} Y:{self.briot.y} Z:{self.briot.z} \n")
         self.message_text.see(tk.END)
 
-
     def parse_plot_gcode(self ,gcode_lines):
         x, y, z = 0, 0, 0
         points_g0 = []
@@ -383,7 +388,6 @@ class CNCInterface:
             print("No G-code commands found to plot.")
             return
     
-
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[ ("NetCDF files", "*.nc"),("GCode files", "*.gcode"), ("All files", "*.*")])
         try :
@@ -481,7 +485,6 @@ class CNCInterface:
         self.stop_button.grid(row=5, column=0, padx=10, pady=10, sticky="nsew")
         self.update_progress_bar(0)
          
-
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
@@ -588,7 +591,7 @@ class CNCInterface:
             self.laserConfig.wm_minsize(400, 200)
             self.laserConfig.geometry("500x300")
 
-             
+            
 
             # Charger l'image pour l'arrière-plan
             background_image = tk.PhotoImage(file="img/PowerLaser.png")
@@ -631,9 +634,13 @@ class CNCInterface:
             close_button = ttk.Button(self.laserConfig, text="Fermer", command=self.closeConLaser)
             close_button.place(relx=0.5, rely=0.9, anchor=tk.CENTER)
 
-            # Définir la taille minimale de la fenêtre pour empêcher l'arrière-plan de se redimensionner
-            self.laserConfig.update_idletasks()
-            self.laserConfig.minsize(self.laserConfig.winfo_width(), self.laserConfig.winfo_height())
+           # Empêcher la redimension de la fenêtre en dessous de la taille minimale
+            self.laserConfig.resizable(True, True)
+            self.laserConfig.update_idletasks()  # Make sure the window is fully rendered before enforcing size constraints
+            current_width = self.laserConfig.winfo_width()
+            current_height = self.laserConfig.winfo_height()
+            if current_width < 400 or current_height < 200:
+                self.laserConfig.minsize(max(400, current_width), max(200, current_height))
         
     def closeConLaser(self):
         if (self.laserPower >0):
@@ -642,7 +649,6 @@ class CNCInterface:
             self.message_text.insert(tk.END, f"Laser non activer\n")
         self.message_text.see(tk.END)       
         self.laserConfig.destroy()
-
 
     def update_progress_bar(self,value : float):
         if value < 0:
