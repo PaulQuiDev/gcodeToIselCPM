@@ -162,6 +162,11 @@ class CNC:
         if (self.z0 > 200): retract = 40 # pour 1 cm
         else : retract = 0
         if(minx != self.max_x or miny != self.max_y ):
+            minx = round(minx)
+            maxx = round(maxx)
+            miny = round(miny)
+            maxy = round(maxy)
+            retract = round(retract)
             self.go_to_machin(self.x0,self.y0,(self.z0 - retract))
             self.go_to_machin(minx,miny,(self.z0-retract))
             self.go_to_machin(minx,maxy,(self.z0 -retract))
@@ -225,7 +230,7 @@ class CNC:
                 alpha -= 2 * np.pi
 
         total_angle = abs(betha - alpha)
-        B = int(round(abs((4 * R * total_angle) / np.pi)))
+        B = int((abs((4 * R * total_angle) / np.pi)))
 
         # Calculate start coordinates relative to the center
         X_start = int(round(R * np.cos(alpha)))
@@ -260,7 +265,7 @@ class CNC:
 
         return c_command
 
-    def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j):
+    def calculate_extremes(self, x_start, y_start, x_end, y_end, i, j)-> list:
         # Centre de l'arc
         cx = x_start + i
         cy = y_start + j
@@ -305,10 +310,10 @@ class CNC:
         x_values = [pt[0] for pt in candidates]
         y_values = [pt[1] for pt in candidates]
 
-        max_x = round(max(x_values))
-        min_x = round( min(x_values))
-        max_y = round( max(y_values))
-        min_y = round( min(y_values))
+        max_x = int(round(max(x_values)))
+        min_x = int(round( min(x_values)))
+        max_y = int(round( max(y_values)))
+        min_y = int( round( min(y_values)))
 
         return [max_x, min_x, max_y, min_y]
 
