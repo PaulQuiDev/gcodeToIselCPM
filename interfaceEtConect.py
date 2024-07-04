@@ -454,6 +454,8 @@ class CNCInterface:
                     self.update_progress_bar((i*100)/len(self.file))  
             else : # tu veux utiliser le laser 
                 laser = False 
+                self.laserBp.state(['!disabled'])
+                self.laserBp.config
                 for i in range(len(self.file)):
                     if self.stop_event.is_set():
                         self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
@@ -497,6 +499,8 @@ class CNCInterface:
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.stop_button.config( text="Arrêt STOP") 
         self.tooltips[self.stop_button].update_text("Stop")
+        self.enable_buttons()
+
     def connect(self):
         if(self.briot.ser == None):
             if platform.system() == 'Linux': # autre méthode de port sur linux

@@ -46,7 +46,7 @@ def read_thread(q):
         removed_points = all_points - current_points
         all_points = current_points
         q.put((list(all_points), list(new_points)))
-        time.sleep(0.5)  # Pause d'une seconde avant de mettre à jour à nouveau
+        time.sleep(2)  # Pause d'une seconde avant de mettre à jour à nouveau
 
 # Création du tracé initial
 fig = plt.figure()
