@@ -407,6 +407,11 @@ class CNC:
         self.x0 = self.x
         self.y0 = self.y
         self.z0 = self.z
+        try:
+            with open(self.log_file, 'a+') as log:
+                log.write(f"X0{self.x0} Y0{self.y0} Z0{self.z0}\n")
+        except IOError as e:
+            print(f"Erreur lors de l'écriture dans le fichier de logs : {e}")
 
     def AutoHome(self) -> str:
         self.x = 0
