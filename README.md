@@ -24,4 +24,9 @@ This is a graphical user interface (GUI) for controlling a CNC machine using Pyt
 2. Check in the ClasseCNC file that the maximum Y axis size
    -In the ClasseCNC file that the maximum size of the Y axis must be 6000 for an unmodified machine. Change this value in max_y more or less line 23 
    
-   run interfaceEtConect.py 
+   run interfaceEtConect.py
+   
+If you encounter version-related issues, open a terminal in the project's root directory and execute the following command:
+```sh
+ pip install .
+```
