@@ -21,4 +21,7 @@ This is a graphical user interface (GUI) for controlling a CNC machine using Pyt
    ```sh
    git clone https://github.com/PaulQuiDev/gcodeToIselCPM
    ```
+2. Check in the ClasseCNC file that the maximum Y axis size
+   -In the ClasseCNC file that the maximum size of the Y axis must be 6000 for an unmodified machine. Change this value in max_y more or less line 23 
+   
    run interfaceEtConect.py 
