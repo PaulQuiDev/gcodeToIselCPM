@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import subprocess
 import platform
 import shutil
+import os
+import sys
+
 
 try :
     if  platform.system() == 'Linux':
@@ -289,21 +292,26 @@ class CNCInterface:
             self.increment_frame.grid_columnconfigure(i, weight=1)
 
     def load_images(self):
+        if hasattr(sys, '_MEIPASS'):
+            base_path = os.path.join(sys._MEIPASS, 'img')
+        else:
+            base_path = os.path.join(os.path.dirname(__file__), 'img')
+    
         # Charger les images pour les boutons de direction
-        self.img_open = ImageTk.PhotoImage(Image.open("img/open.png").resize((150, 150)))
-        self.img_start = ImageTk.PhotoImage(Image.open("img/start.png").resize((90, 50)))
-        self.img_mouvY = ImageTk.PhotoImage(Image.open("img/mouv.png").resize((50, 50)))
-        self.img_mouvy = ImageTk.PhotoImage(Image.open("img/mouv.png").resize((50, 50)).rotate(180))
-        self.img_mouvx = ImageTk.PhotoImage(Image.open("img/mouv.png").resize((50, 50)).rotate(90))
-        self.img_mouvX = ImageTk.PhotoImage(Image.open("img/mouv.png").resize((50, 50)).rotate(270))
-        self.img_mouvZ = ImageTk.PhotoImage(Image.open("img/mouvZ.png").resize((80, 80)))
-        self.img_mouvz = ImageTk.PhotoImage(Image.open("img/mouvZ.png").resize((80, 80)).rotate(180))
-        self.img_toolStart = ImageTk.PhotoImage(Image.open("img/outilS.png").resize((40, 40)))
-        self.img_toolStop = ImageTk.PhotoImage(Image.open("img/outilO.png").resize((40, 40)))
-        self.img_home = ImageTk.PhotoImage(Image.open("img/home.png").resize((50,50)))
-        self.img_Pt0 = ImageTk.PhotoImage(Image.open("img/spot0.png").resize((50,50)))
-        self.img_visu= ImageTk.PhotoImage(Image.open("img/Visu.png").resize((50,50)))
-        self.img_laser = ImageTk.PhotoImage(Image.open("img/laser.png").resize((50, 50)))
+        self.img_open = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "open.png")).resize((150, 150)))
+        self.img_start = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "start.png")).resize((90, 50)))
+        self.img_mouvY = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)))
+        self.img_mouvy = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(180))
+        self.img_mouvx = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(90))
+        self.img_mouvX = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(270))
+        self.img_mouvZ = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)))
+        self.img_mouvz = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)).rotate(180))
+        self.img_toolStart = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "outilS.png")).resize((40, 40)))
+        self.img_toolStop = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "outilO.png")).resize((40, 40)))
+        self.img_home = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "home.png")).resize((50, 50)))
+        self.img_Pt0 = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "spot0.png")).resize((50, 50)))
+        self.img_visu = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "Visu.png")).resize((50, 50)))
+        self.img_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "laser.png")).resize((50, 50)))
 
     def move(self,  axis : str , amount: int):
         message = ""

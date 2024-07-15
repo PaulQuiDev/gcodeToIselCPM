@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 Holder.nc
 gcodeToIselCPM.egg-info
+build/
+dist/
