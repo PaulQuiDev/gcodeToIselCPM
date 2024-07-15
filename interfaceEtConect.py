@@ -481,8 +481,8 @@ class CNCInterface:
                             laser == True
                             self.pwm.start(self.laserPower)
                     except :
-                        
-                        print(f" {self.file[i]} \n up  {self.briot.speed} ")
+                        None
+                        #print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
 
