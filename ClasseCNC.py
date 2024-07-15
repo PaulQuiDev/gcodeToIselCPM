@@ -163,10 +163,10 @@ class CNC:
         if (self.z0 > 200): retract = 40 # pour 1 cm
         else : retract = 0
         if(minx != self.max_x or miny != self.max_y ):
-            minx = round(minx)
-            maxx = round(maxx)
-            miny = round(miny)
-            maxy = round(maxy)
+            minx = int(round(minx))
+            maxx = int(round(maxx))
+            miny = int(round(miny))
+            maxy = int(round(maxy))
             retract = round(retract)
             self.go_to_machin(self.x0,self.y0,(self.z0 - retract))
             self.go_to_machin(minx,miny,(self.z0-retract))
@@ -174,6 +174,7 @@ class CNC:
             self.go_to_machin(maxx,maxy,(self.z0 -retract))
             self.go_to_machin(maxx,miny,(self.z0 -retract))
             self.go_to_machin(minx,minx,(self.z0 -retract))
+            self.go_to_machin(self.x0,self.y0,self.z0) # pour changer la dernier position au cas ou 
 
         return ordre
 
