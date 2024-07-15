@@ -328,6 +328,18 @@ class CNCInterface:
         self.message_text.see(tk.END)
 
     def define_point(self):
+        if (self.briot.x == 0 and self.briot.y == 0 and self.briot.z == 0): # if 0 realod old 0 point on log file
+            try :
+                with open (self.briot.log_file, 'r') as fil:
+                    origine = fil.readline()
+                origine = origine.split(' ')
+                x = int(float(origine[1][1:]))
+                y = int(float(origine[2][1:]))
+                z = int(float(origine[3][1:]))
+                self.briot.go_to_machin(x,y,z)
+                self.briot.SetLocal0()
+            except:
+                print("error Non history position")
         self.briot.SetLocal0()
         self.message_text.insert(tk.END, f"Point 0 défini at X:{self.briot.x} Y:{self.briot.y} Z:{self.briot.z} \n")
         self.message_text.see(tk.END)
@@ -442,6 +454,7 @@ class CNCInterface:
             messagebox.showerror("Error Tool" , "Outils non initilaliser")
         
     def run_cut_process(self):
+        self.briot.log_clear()
         if not laserReady :
             for i in range(len(self.file)):
                 if self.stop_event.is_set():
@@ -485,8 +498,7 @@ class CNCInterface:
                         #print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
-
-        self.pwm.stop()
+        if laserReady == True : self.pwm.stop()
         self.message_text.insert(tk.END, "Découpe terminée\n")
         self.message_text.see(tk.END)
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
@@ -507,7 +519,11 @@ class CNCInterface:
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
         self.stop_button.config( text="Arrêt STOP") 
         self.tooltips[self.stop_button].update_text("Stop")
-        self.enable_buttons()
+        if( self.briot.state == True):
+            self.enable_buttons()
+        else:
+            self.disable_buttons()
+            self.connect_button.config(state=tk.ACTIVE)
 
     def connect(self):
         if(self.briot.ser == None):

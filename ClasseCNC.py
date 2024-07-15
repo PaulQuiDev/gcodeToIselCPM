@@ -226,7 +226,7 @@ class CNC:
 
         # Calculate the angle difference
         if clockwise:
-            if betha > alpha:
+            if betha > alpha:  
                 betha -= 2 * np.pi
         else:
             if alpha > betha:
@@ -235,7 +235,7 @@ class CNC:
         total_angle = abs(betha - alpha)
         B = int((abs((4 * R * total_angle) / np.pi)))
 
-        # Calculate start coordinates relative to the center
+        # Calculate start coordinates relative to the center 
         X_start = int(round(R * np.cos(alpha)))
         Y_start = int(round(R * np.sin(alpha)))
 
@@ -284,7 +284,6 @@ class CNC:
         min_y = int(round(min(y_values)))
 
         return [max_x, min_x, max_y, min_y]
-
 
     def initialisation_connexion(self) -> str:
         if (self.ser != None ):
@@ -344,20 +343,28 @@ class CNC:
         except IOError as e:
             print(f"Erreur lors de l'écriture dans le fichier de logs : {e}")
 
+    def log_clear(self):
+        try:
+            with open(self.log_file, 'w') as log:
+                log.write(f"00 X0{self.x0} Y0{self.y0} Z0{self.z0}\n")
+                log.close()
+        except IOError as e:
+            print(f"Erreur lors de l'écriture dans le fichier de logs : {e}")
+
     def initialize_log_file(self) -> None:
         """Initialise (écrase) le fichier de logs."""
         try:
-            with open(self.log_file, 'w+') as log:
-                log.write("Log de commandes CNC\n")
+            with open(self.log_file, 'x') as log:
+                None # c'est ok s
+                log.close
         except IOError as e:
-            print(f"Erreur lors de l'initialisation du fichier de logs : {e}")
-    
+            print('fichier non créer')
+            
     def __order__(self, ordre : str)-> None:
         try:
             self.ser.write(ordre.encode('utf-8'))
         except serial.SerialException as e:
             print("erreu envoi:", e)
-
 
     def _commander_(self, instruction: str) -> str: #ordre direct sans vérificateion de connection pas de possition
         try:
@@ -408,12 +415,8 @@ class CNC:
         self.x0 = self.x
         self.y0 = self.y
         self.z0 = self.z
-        try:
-            with open(self.log_file, 'a+') as log:
-                log.write(f"X0{self.x0} Y0{self.y0} Z0{self.z0}\n")
-        except IOError as e:
-            print(f"Erreur lors de l'écriture dans le fichier de logs : {e}")
-
+        self.log_position(f"00 X0{self.x0} Y0{self.y0} Z0{self.z0}\n")
+        
     def AutoHome(self) -> str:
         self.x = 0
         self.y = 0
@@ -478,6 +481,8 @@ class CNC:
                 return("/" + retour + "/ illegal parametre")
             elif retour == "H":
                 return("/" + retour + "/ Panneau ouvert")
+            elif retour == "C":
+                return("/" + retour + "/ Spame message ")
             else :
                 return ("/" + retour + "/ Erreur de....")
     
