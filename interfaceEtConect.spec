@@ -39,7 +39,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='mon_executable',
+    name='gcodeToIselCPM',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -52,6 +52,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='img/apli.ico'
 )
 
 coll = COLLECT(
@@ -62,5 +63,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='mon_executable'
+    name='IselAPP'
 )
