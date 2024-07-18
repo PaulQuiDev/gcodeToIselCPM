@@ -19,12 +19,12 @@ Bienvenue dans la notice d'utilisation de l'application de contrôle CNC. Cette 
 - Une méthode de connexion entre votre ordinateur et la machine Isel.
 
 ### Étapes d'installation
-#### Pour Windows
+#### Depuis la release
 1. Téléchargez la dernière version de l'application sur GitHub [lien de téléchargement](https://github.com/PaulQuiDev/gcodeToIselCPM/releases).
-2. Exécutez le fichier `interface.exe` (le fichier doit être déplacé avec sa dépendance `_internal`).
-   - Sinon, suivez les instructions d'installation pour Linux.
+2. Exécutez le fichier gcodeToIselCPM en fonction de votre système d'exploitation (le fichier doit être déplacé avec sa dépendance _internal).
+   - Sinon, suivez les instructions d'installation Depuis git.
 
-#### Pour Linux
+#### Depuis Git
 1. Clonez le projet dans une invite de commande :
    ```sh 
    git clone https://github.com/PaulQuiDev/gcodeToIselCPM
