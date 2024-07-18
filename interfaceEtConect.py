@@ -19,7 +19,7 @@ try :
     else :
         laserReady =False
 except:
-    print("Découpe laser non disponible")
+    print("La découpe laser n'est pas disponible.")
     laserReady = False
 
 class Tooltip:
@@ -61,21 +61,24 @@ class CNCInterface:
         self.progress = tk.DoubleVar()
 
         self.stop_event = threading.Event()  # Variable de contrôle pour arrêter le processus
-        
+
         self.file = None
-        if laserReady == True: # init laser Pwm 
+
+        # Initialisation du laser si prêt
+        if laserReady: 
             self.laserPower = -1
             GPIO.setmode(GPIO.BCM)  # Utilisation des numéros de broches BCM
             GPIO.setup(18, GPIO.OUT)  
-            self.pwm = GPIO.PWM(18,4000)
+            self.pwm = GPIO.PWM(18, 4000)
 
         self.load_images()
         self.create_widgets()
         self.setup_grid()
-        self.initConection()
+        self.initConnection()  
         self.disable_buttons("(Printer not connected)")
 
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         
     def create_widgets(self):
         style = ttk.Style()
@@ -83,7 +86,7 @@ class CNCInterface:
 
         self.tooltips = {}
         # Frame pour les boutons de direction
-        self.direction_frame = ttk.LabelFrame(self.master, padding="10 10 10 10",text='Controle Machine')
+        self.direction_frame = ttk.LabelFrame(self.master, padding="10 10 10 10", text='Contrôle Machine')
         self.direction_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
         # =======================crois directionnelle
@@ -322,7 +325,7 @@ class CNCInterface:
         elif(axis == "Z"):
             message = self.briot.move_Z(amount)
         else:
-            message= "Move don't understood"
+            message= "Move not understood"
 
         self.message_text.insert(tk.END, f"Move {axis} by {amount} statu : {message}\n")
         self.message_text.see(tk.END)
@@ -339,7 +342,7 @@ class CNCInterface:
                 self.briot.go_to_machin(x,y,z)
                 self.briot.SetLocal0()
             except:
-                print("error Non history position")
+                print("error no history of position")
         self.briot.SetLocal0()
         self.message_text.insert(tk.END, f"Point 0 défini at X:{self.briot.x} Y:{self.briot.y} Z:{self.briot.z} \n")
         self.message_text.see(tk.END)
@@ -566,7 +569,7 @@ class CNCInterface:
         if selected_port:
             self.briot = CNC(selected_port)
             message = self.briot.initialisation_connexion()
-            if message == "Bien Connecter":
+            if message == "Bien connecté":
                 self.message_text.insert(tk.END, "Connexion réussie\n")
                 self.message_text.see(tk.END)
                 self.connect_button.config(state=tk.DISABLED)
@@ -578,34 +581,37 @@ class CNCInterface:
                 self.message_text.see(tk.END)             
 
     def start_tool(self):
-        message = self.briot.Start_Tool()
+        message = self.briot.Start_Tool() 
         self.briot.Close_Door()
-        if (message == "0"):
-            self.message_text.insert(tk.END, f"Outil démarré porte verrouillée {message}\n")
+        if message == "0":
+            self.message_text.insert(tk.END, f"Outil démarré, porte verrouillée : {message}\n")
             self.message_text.see(tk.END)
-            messagebox.showwarning("Vérif outils" , "Vérifier que l'outils tourne !\nIl a sont propre intérupteur")
+            messagebox.showwarning("Vérification de l'outil", "Vérifiez que l'outil tourne !\nIl a son propre interrupteur.")
             self.infoTool = True
         else:
-            self.message_text.insert(tk.END, f"Outil non demarrer {message}\n")
+            self.message_text.insert(tk.END, f"Outil non démarré : {message}\n")
             self.message_text.see(tk.END)
+
 
     def stop_tool(self):
         message = self.briot.Stop_Tool()
         self.briot.Open_Door()
-        if (message == "0"):
-            self.message_text.insert(tk.END, f"Outil arrêté Porte deverrouillée {message}\n")
+        if message == "0":
+            self.message_text.insert(tk.END, f"Outil arrêté, porte déverrouillée : {message}\n")
             self.message_text.see(tk.END)
-            self.infoTool= False
+            self.infoTool = False
         else:
-            self.message_text.insert(tk.END, f"erreur {message}\n")
+            self.message_text.insert(tk.END, f"Erreur : {message}\n")
             self.message_text.see(tk.END)
-            self.infoTool= False
-        if laserReady == True :
+            self.infoTool = False
+
+        if laserReady:
             self.pwm.stop()
+
         
     def laserInit(self):
         if not laserReady:
-            self.message_text.insert(tk.END, "Laser non disponible, vous devez être sur Raspberry Pi sous Linux.")
+            self.message_text.insert(tk.END, "Laser non disponible. Vous devez être sur Raspberry Pi sous Linux.\n")
         else:
             self.infoTool = True
             # Fonction pour définir la puissance du laser à l'aide d'une barre de choix
@@ -615,7 +621,7 @@ class CNCInterface:
 
             # Création de la fenêtre Toplevel pour la configuration du laser
             self.laserConfig = tk.Toplevel(self.master)
-            self.laserConfig.title("Config Laser")
+            self.laserConfig.title("Configuration du Laser")
             
             # Définir une taille minimale pour la fenêtre
             self.laserConfig.wm_minsize(400, 200)
@@ -637,7 +643,7 @@ class CNCInterface:
             background_label.image = background_image
 
             # Label pour indiquer la puissance du laser comme un titre en grand
-            label = ttk.Label(self.laserConfig, text="Puissance du Laser ", font=("Helvetica", 16, "bold"), background='grey')
+            label = ttk.Label(self.laserConfig, text="Puissance du Laser", font=("Helvetica", 16, "bold"), background='grey')
             label.place(relx=0.5, y=20, anchor=tk.CENTER)
 
             # Barre de choix (Scale) pour définir la puissance du laser
@@ -674,9 +680,9 @@ class CNCInterface:
         
     def closeConLaser(self):
         if (self.laserPower >0):
-            self.message_text.insert(tk.END, f"Puissance Laser: {round(self.laserPower,1)}\n")
+            self.message_text.insert(tk.END, f"Puissance du Laser: {round(self.laserPower,1)}\n")
         else :
-            self.message_text.insert(tk.END, f"Laser non activer\n")
+            self.message_text.insert(tk.END, "Laser non activé\n")
         self.message_text.see(tk.END)       
         self.laserConfig.destroy()
 
@@ -692,7 +698,7 @@ class CNCInterface:
         self.message_text.insert(tk.END, f"home: {message}\n")
         self.message_text.see(tk.END)
 
-    def initConection(self):
+    def initConnection(self):
         self.briot = CNC()
         self.briot.DefSpeed(35)
     
