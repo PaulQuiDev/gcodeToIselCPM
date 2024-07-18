@@ -315,6 +315,7 @@ class CNCInterface:
         self.img_Pt0 = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "spot0.png")).resize((50, 50)))
         self.img_visu = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "Visu.png")).resize((50, 50)))
         self.img_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "laser.png")).resize((50, 50)))
+        self.img_power_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "PowerLaser.png")))
 
     def move(self,  axis : str , amount: int):
         message = ""
@@ -630,7 +631,7 @@ class CNCInterface:
             
 
             # Charger l'image pour l'arrière-plan
-            background_image = tk.PhotoImage(file="img/PowerLaser.png")
+            background_image = self.img_power_laser
             # Obtenir les dimensions de l'image
             img_width = background_image.width()
             img_height = background_image.height()
