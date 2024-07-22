@@ -10,6 +10,7 @@ import platform
 import shutil
 import os
 import sys
+import pkg_resources
 
 
 try :
