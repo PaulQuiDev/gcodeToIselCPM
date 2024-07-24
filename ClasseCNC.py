@@ -329,6 +329,7 @@ class CNC:
                 if (instruction[:3] == "@0M") :
                     self.x , self.y , self.z = float(instru[0][4:]) , float(instru[2]) , abs(float(instru[4]))
                     self.log_position(f"X{self.x},Y{self.y},Z{-self.z}")
+                
                 return self.Read_machine_message()
             except serial.SerialException as e:
                 return ("Erreur lors de l'envoi de l'instruction sur le port série :", e)
@@ -358,7 +359,8 @@ class CNC:
                 None # c'est ok s
                 log.close
         except IOError as e:
-            print('fichier non créer')
+            None
+            #print('fichier non créer')
             
     def __order__(self, ordre : str)-> None:
         try:

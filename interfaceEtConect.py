@@ -9,19 +9,20 @@ import subprocess
 import platform
 import shutil
 import os
-import sys
-import pkg_resources
+import sys  
 
 
 try :
-    if  platform.system() == 'Linux':
-        import RPi.GPIO as GPIO
-        laserReady = True
+    if platform.system() == 'Windows':
+        laserReady = 2
+    elif  platform.system() == 'Linux': #Laser ready 1:Linux rasp 2:Windows avec ESP 3:False
+        import RPi.GPIO as GPIO # Linux on rasberry pi
+        laserReady = 1    
     else :
-        laserReady =False
+        laserReady = 0 
 except:
-    print("La découpe laser n'est pas disponible.")
-    laserReady = False
+    #print("La découpe laser n'est pas disponible.")
+    laserReady = 0
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -66,11 +67,14 @@ class CNCInterface:
         self.file = None
 
         # Initialisation du laser si prêt
-        if laserReady: 
-            self.laserPower = -1
+        if laserReady == 1: 
+            self.laserPower = -1 # est un flaot pour rasp
             GPIO.setmode(GPIO.BCM)  # Utilisation des numéros de broches BCM
             GPIO.setup(18, GPIO.OUT)  
             self.pwm = GPIO.PWM(18, 4000)
+        elif laserReady == 2 :
+            self.laserPower = -1
+            self.laserCom = None 
 
         self.load_images()
         self.create_widgets()
@@ -122,10 +126,7 @@ class CNCInterface:
         self.increment_1mm_button.grid(row=0, column=3, sticky="nsew")
 
         # Bouton pour définir le point 0 si pas laser juste pt 0 sinon avec laser découpe
-        if (laserReady == False) :
-            self.define_button = ttk.Button(self.master, text="Définir Point 0",compound='right', image=self.img_Pt0 ,command=self.define_point)
-            self.define_button.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
-        else :
+        if (laserReady != 0) :
             self.position_laser = ttk.Frame(self.master)
             self.position_laser.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 
@@ -135,9 +136,16 @@ class CNCInterface:
                 
             self.define_button = ttk.Button(self.position_laser, text="Définir Point 0",compound='right', image=self.img_Pt0 ,command=self.define_point)
             self.define_button.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+            if (laserReady == 1) :
+                self.laserBp = ttk.Button(self.position_laser , text="LASER" ,compound='top', image= self.img_laser, command=self.laserPowerSelect )
+                self.laserBp.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+            elif (laserReady == 2 and self.laserCom == None  )  :
+                self.laserBp = ttk.Button(self.position_laser , text="LASER Signal" ,compound='top', image= self.img_laser_com, command=self.laserComOpen )
+                self.laserBp.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        else :
+            self.define_button = ttk.Button(self.master, text="Définir Point 0",compound='right', image=self.img_Pt0 ,command=self.define_point)
+            self.define_button.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 
-            self.laserBp = ttk.Button(self.position_laser , text="LASER" ,compound='top', image= self.img_laser, command=self.laserInit )
-            self.laserBp.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
         # Boutons pour charger le fichier et lancer la découpe
         self.load_button = ttk.Button(self.master, text='Charger un Fichier', image=self.img_open, compound='top', command=self.load_file)
@@ -219,7 +227,7 @@ class CNCInterface:
         self.start_tool_button.state(['disabled'])
         self.stop_tool_button.state(['disabled'])
 
-        if (laserReady == True):
+        if (laserReady == 1 or laserReady == 2):
             self.laserBp.state(['disabled'])
     
         # Mettre à jour les infobulles pour indiquer que l'imprimante n'est pas connectée
@@ -259,7 +267,7 @@ class CNCInterface:
         self.stop_tool_button.state(['!disabled'])
         self.stop_button.state(['!disabled'])
 
-        if (laserReady == True):
+        if (laserReady == 1 or laserReady == 2):
             self.laserBp.state(['!disabled'])
 
         # Restaurer les infobulles originales
@@ -317,6 +325,9 @@ class CNCInterface:
         self.img_visu = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "Visu.png")).resize((50, 50)))
         self.img_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "laser.png")).resize((50, 50)))
         self.img_power_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "PowerLaser.png")))
+        self.img_laser_com = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "ComBord.png")).resize((50, 50)))
+        self.img_laser_Select = Image.open(os.path.join(base_path, "FQlase.png"))
+
 
     def move(self,  axis : str , amount: int):
         message = ""
@@ -460,7 +471,7 @@ class CNCInterface:
         
     def run_cut_process(self):
         self.briot.log_clear()
-        if not laserReady :
+        if laserReady == 0 or (laserReady == 2 and self.laserCom == None): # tu n'es pas dans les dipos laser ou windows sans com n'est pas initialiser
             for i in range(len(self.file)):
                 if self.stop_event.is_set():
                     self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
@@ -478,7 +489,7 @@ class CNCInterface:
                         break
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file))  
-            else : # tu veux utiliser le laser 
+            elif(laserReady == 1) : # tu veux utiliser le laser rasberry
                 laser = False 
                 self.laserBp.state(['!disabled'])
                 self.laserBp.config
@@ -503,7 +514,34 @@ class CNCInterface:
                         #print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
-        if laserReady == True : self.pwm.stop()
+            else : #tu veux utiliser le laser avec un windows et la com a été initialiser 
+                laser = False 
+                self.laserBp.state(['!disabled'])
+                self.laserBp.config
+                for i in range(len(self.file)):
+                    if self.stop_event.is_set():
+                        self.message_text.insert(tk.END, "Découpe arrêtée par l'utilisateur\n")
+                        self.message_text.see(tk.END)
+                        break 
+                    try :
+                        if ((self.file[i][:2] == "@0f" ) == False  or len(self.file)<=0): # si ce nes pas un commande pour indique les sense de rotation , et que la taille est coérente 
+                            if( self.file[i].split(',')[-3] != str(self.briot.speed) and laser== False):
+                                laser = True
+                                self.laserPWMsend(self.laserPower)
+                            elif (self.file[i].split(',')[-3] == str(self.briot.speed) and laser == True):
+                                laser = False 
+                                self.laserPWMsend(0)
+                        elif(laser == False):
+                            laser == True
+                            self.laserPWMsend(self.laserPower)
+                    except :
+                        None
+                        #print(f" {self.file[i]} \n up  {self.briot.speed} ")
+                    self.briot.send_position(self.file[i])
+                    self.update_progress_bar((i*100)/len(self.file))
+
+        self.stop_tool()
+
         self.message_text.insert(tk.END, "Découpe terminée\n")
         self.message_text.see(tk.END)
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
@@ -518,7 +556,7 @@ class CNCInterface:
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
-        if (laserReady == True)  :self.pwm.stop()
+        if (laserReady == 1)  :self.pwm.stop()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
         self.start_button.config( text="Lancer la découpe", image=self.img_start, compound='left' ,command=self.start_cut)
@@ -594,7 +632,6 @@ class CNCInterface:
             self.message_text.insert(tk.END, f"Outil non démarré : {message}\n")
             self.message_text.see(tk.END)
 
-
     def stop_tool(self):
         message = self.briot.Stop_Tool()
         self.briot.Open_Door()
@@ -607,13 +644,15 @@ class CNCInterface:
             self.message_text.see(tk.END)
             self.infoTool = False
 
-        if laserReady:
+        if laserReady == 1:
             self.pwm.stop()
 
-        
-    def laserInit(self):
-        if not laserReady:
-            self.message_text.insert(tk.END, "Laser non disponible. Vous devez être sur Raspberry Pi sous Linux.\n")
+        if laserReady == 2 :
+            if self.laserCom != None: self.laserPWMsend(str(0))
+       
+    def laserPowerSelect(self):
+        if laserReady == 0:
+            self.message_text.insert(tk.END, "Laser non disponible pour votre situaution\n")
         else:
             self.infoTool = True
             # Fonction pour définir la puissance du laser à l'aide d'une barre de choix
@@ -630,12 +669,8 @@ class CNCInterface:
             self.laserConfig.geometry("500x300")
 
             
-
             # Charger l'image pour l'arrière-plan
             background_image = self.img_power_laser
-            # Obtenir les dimensions de l'image
-            img_width = background_image.width()
-            img_height = background_image.height()
 
             # Étiquette pour l'arrière-plan avec l'image
             background_label = ttk.Label(self.laserConfig, image=background_image)
@@ -680,14 +715,125 @@ class CNCInterface:
             if current_width < 400 or current_height < 200:
                 self.laserConfig.minsize(max(400, current_width), max(200, current_height))
         
-    def closeConLaser(self):
+    def closeConLaser(self): # doit appler une fonction pour marcher 
         if (self.laserPower >0):
             self.message_text.insert(tk.END, f"Puissance du Laser: {round(self.laserPower,1)}\n")
         else :
             self.message_text.insert(tk.END, "Laser non activé\n")
         self.message_text.see(tk.END)       
         self.laserConfig.destroy()
+    
+    def laserComOpen(self): # fenetre de sélection de ports
+        self.port_Pwm_fenaitre = tk.Toplevel(self.master)
+        self.port_Pwm_fenaitre.title("Ports de connection Module PWM")
+        self.port_Pwm_fenaitre.geometry("400x280")
+    
+        canvas = tk.Canvas(self.port_Pwm_fenaitre, width=400, height=280)
+        canvas.pack(fill="both", expand=True)
+    
+        # Chargez et redimensionnez l'image pour qu'elle prenne tout l'espace de la fenêtre 
+        original_image = self.img_laser_Select
+        resized_image = original_image.resize((400, 280), Image.ANTIALIAS)
+        self.img_laser_Select = ImageTk.PhotoImage(resized_image)
+    
+        # Met l'image en arrière-plan
+        canvas.create_image(0, 0, image=self.img_laser_Select, anchor="nw")
+    
+        # Créez les widgets et placez-les au centre
+        label = tk.Label(self.port_Pwm_fenaitre, text="Sélectionnez un port :")
+        canvas.create_window(200, 80, window=label)
+    
+        self.selected_port = tk.StringVar()
+        ports = serial.tools.list_ports.comports()
+        port_list = [port.device for port in ports]
+        port_menu = ttk.Combobox(self.port_Pwm_fenaitre, textvariable=self.selected_port, values=port_list)
+        canvas.create_window(200, 120, window=port_menu)
+    
+        retry_button = ttk.Button(self.port_Pwm_fenaitre, text="Connexion Appareil", command=self.laserModuleConection)
+        canvas.create_window(200, 160, window=retry_button)
+        
 
+    def laserModuleConection(self): # fonction peut se connecter
+        selected_port = self.selected_port.get()
+        back = ""
+
+        def read_response():
+            nonlocal back
+            try:
+                back = self.laserCom.readline().decode('utf-8', errors='ignore').strip()
+            except:
+                back = "error"
+
+        if self.laserCom is None:  # si non initialisé alors tente connection sinon teste et supprime connection
+            try:
+                self.laserCom = serial.Serial(selected_port, 250000)
+                ordre = "0"
+                self.laserCom.write(ordre.encode('utf-8'))
+
+                read_thread = threading.Thread(target=read_response)
+                read_thread.start()
+                read_thread.join(timeout=2)  # timeout de 2 secondes
+
+                if back == "error" or back != "Null":
+                    self.laserCom = None
+                else:
+                    self.port_Pwm_fenaitre.destroy()
+                    self.laserBp.config(text='LASER', command=self.laserPowerSelect, image=self.img_laser)
+                    self.message_text.insert(tk.END, "Connection avec la module laser réussite"+"\n") 
+                    self.message_text.see(tk.END)
+            except:
+                print('erreur module PWM')
+                self.laserCom = None
+
+        else:
+            try:
+                ordre = "0"
+                self.laserCom.write(ordre.encode('utf-8'))
+
+                read_thread = threading.Thread(target=read_response)
+                read_thread.start()
+                read_thread.join(timeout=2)  # timeout de 2 secondes
+
+                if back == "error" or back != "Null":
+                    self.laserCom = None
+            except:
+                try:
+                    self.laserCom.close()  # tentative de libérer la communication en cas d'erreur dans la variable
+                except:
+                    pass
+                self.laserCom = None
+
+    def laserPWMsend(self ,puissance) -> bool :
+        try :
+            puissance = str(int(puissance))
+        except:
+            None
+        if ( self.laserCom  != None) :
+            self.laserCom.write((puissance + '\n').encode('utf-8'))
+            back = ""
+
+        def read_response():
+            nonlocal back
+            try:
+                back = self.laserCom.readline().decode('utf-8', errors='ignore').strip()
+            except:
+                back = "error"
+        try :
+            read_thread = threading.Thread(target=read_response)
+            read_thread.start()
+            read_thread.join(timeout=2)
+        except:
+            back= "error"
+        #print("retout esp :", back)
+        if back == "error"  :
+                return False
+        elif  back != str('Null'):
+            return True
+        elif (len(back.split(' ')) >= 1 ) :
+            if (back.split(' ')[2] != puissance ) : return False
+            return True
+        else: return True
+        
     def update_progress_bar(self,value : float):
         if value < 0:
             value = 1
@@ -707,9 +853,11 @@ class CNCInterface:
     def on_closing(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.briot.deconnection()
-        if laserReady == True :
+        if laserReady == 1 :
             self.pwm.stop()
             GPIO.cleanup()
+        elif (laserReady == 2):
+            if self.laserCom != None: self.laserCom.close()
         self.master.destroy()
 
     def open_in_new_terminal(self, script_path):
