@@ -442,11 +442,18 @@ class CNC:
         else:
             print("Position y invalide")
             return "Position y invalide"
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 7a75498e667b4a1007a1ad7d999a42a3db94296b
     def move_Z(self, Z: int) -> str:
         if (self.z + (Z * 40)) > 0 or (self.z + (Z * 40) < self.max_z):
             return self.go_to_machin( int(self.x),  int(self.y), int(self.z + Z ))
-        else: print("Position Z invalide")
+        else: 
+            print("Position Z invalide")
+            return "Position Z invalide"
+
     
     def DefSpeed(self , SPEED : int) -> None: # maj a speed = mm/s pour les ordres de déplacement 
         if (SPEED > 0 and SPEED < 50):

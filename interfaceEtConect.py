@@ -467,7 +467,7 @@ class CNCInterface:
             self.cut_thread.daemon = True  # Définir le thread comme daemon
             self.cut_thread.start()  
         else:
-            messagebox.showerror("Error Tool" , "Outils non initilaliser")
+            messagebox.showerror("Error Tool" , "Outils non initilaliser") 
         
     def run_cut_process(self):
         self.briot.log_clear()
