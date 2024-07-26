@@ -395,7 +395,9 @@ class CNC:
                 Y = int(Y)
                 Z = int(Z)
                 return self.send_position(f"@0M {X*40},{self.speed},{Y*40},{self.speed},{-abs(Z*40)},{self.speed},{-abs(Z*40)},{self.speed}\r")
-        else: print('machine non dispo')
+        else: 
+            print('machine non dispo')
+            return "machine No dispo"
 
     def go_to_machin(self,x:int,y:int,z:int)-> str: # problemme 
         if (self.state == True ):
@@ -411,7 +413,9 @@ class CNC:
                 z = int(z)
                 #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
-        else: print('machine non dispo')
+        else:
+            print('machine non dispo')
+            return "Machine non dispo"
 
     def SetLocal0(self) -> None:
         self.x0 = self.x
@@ -428,13 +432,17 @@ class CNC:
     def move_X(self , X: int) -> str:
         if ( (self.x + (X*40)) > 0 or (self.x + (X*40)) < self.max_x):
             return self.go_to_machin(int(self.x + X*40), int(self.y) , int(self.z))
-        else: print("Position x invalide")
+        else:
+            print("Position x invalide")
+            return "Position x invalide"
         
     def move_Y(self, Y: int) -> str:
         if (self.y + (Y * 40)) > 0 or (self.y + (Y * 40) < self.max_y):
             return self.go_to_machin( int(self.x), int(self.y + Y*40),  int(self.z))
-        else: print("Position y invalide")
-
+        else:
+            print("Position y invalide")
+            return "Position y invalide"
+        
     def move_Z(self, Z: int) -> str:
         if (self.z + (Z * 40)) > 0 or (self.z + (Z * 40) < self.max_z):
             return self.go_to_machin( int(self.x),  int(self.y), int(self.z + Z ))
