@@ -830,7 +830,10 @@ class CNCInterface:
         elif  back != str('Null'):
             return True
         elif (len(back.split(' ')) >= 1 ) :
-            if (back.split(' ')[2] != puissance ) : return False
+            try :
+                if (back.split(' ')[2] != puissance ) : return False
+            except: 
+                None
             return True
         else: return True
         
