@@ -57,6 +57,7 @@ class CNC:
         d , j = 0, 0
         minx , miny , maxx , maxy = self.max_x ,self.max_y,0,0
         ordre = []
+        ordreSkip = 0
         for i in instru:
             word = i.split(' ')
             if len(word) > 1 and word[0][0] == 'G':  # commande de direction
@@ -73,6 +74,7 @@ class CNC:
                         #print('z :' , z, " machin=" , z*40)
                     elif truc.startswith('F'):
                         speed = int(float(truc[1:]))
+                        if (speed == self.speed) : speed += 1 # la vitesse est le criter pour diférencie les G0 des G1
                     # juste pour la rotation    
                     elif truc.startswith('I'):
                         d = float(truc[1:])
@@ -80,15 +82,29 @@ class CNC:
                         j = float(truc[1:])
                     
                 if (word[0] == 'G1' or word[0] == 'G01'): # suivent les versiont c'est G1 ou G01
-                    ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r")
+                    if ( (abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) >= 0.1 ) : # le déplacement doit dépasser un demi milimétre 
+                        ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r")
+                    else :
+                        #print("ordre ignorer diff = " , (abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) )
+                        ordreSkip+=1
+                        if (ordreSkip >= 10) : 
+                            ordreSkip = 0
+                            ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r")
                     #self.afficher_instruction(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r",ende='\n\n ')
 
-                elif (word[0] == 'G0' or word[0] == 'G00') : #c'est un G0 mouvement rapide 
+                elif (word[0] == 'G0' or word[0] == 'G00') : #c'est un G0 mouvement rapide mais aussi pour déactiver le lazer 
                     ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r")
+                    ordreSkip = 0
                     #self.afficher_instruction(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{(int(z*40 - self.z0))},{self.speed},{(int(z*40 - self.z0))},{self.speed}\r",ende='\n\n')
                     
                 elif (word[0] in ('G2', 'G02', 'G3', 'G03')): # boucle qui génere les arrondies 
-                    if (old_z != z) : # les courbe en 3D ne sont pas pris en compte 
+                    ordreSkip = 0
+                    if ((abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) < 0.2):
+                        arc_points = self.generate_arc_Z(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'),num_points=3)
+                        for pt in arc_points:
+                            x , y , z = pt[0] , pt[1] , pt[2]
+                            ordre.append(f"@0M {int(x*40 + self.x0)},{self.speed},{int(y*40 + self.y0)},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed},{-abs(int(z*40 - self.z0))},{self.speed}\r")
+                    elif (old_z != z) : # les courbe en 3D ne sont pas pris en compte 
                         arc_points = self.generate_arc_Z(old_x, old_y, old_z, x, y, z, d, j, word[0] in ('G2', 'G02'))
                         for ptRotate in arc_points: # vérification des arrondies 
                             x , y , z = ptRotate[0] , ptRotate[1] , ptRotate[2]
@@ -408,9 +424,9 @@ class CNC:
             elif (z < 0 or z > self.max_z):
                 return ("z en dehors du plateau")
             else:
-                x = int(x) # aprés la comparaisont z peut devenir un flaout 
-                y = int(y)
-                z = int(z)
+                x = int(round(x,-1)) # aprés la comparaisont z peut devenir un flaout 
+                y = int(round(y,-1))
+                z = int(round(z,-1))
                 #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
         else:
