@@ -305,6 +305,8 @@ class CNC:
         if (self.ser != None ):
             self.__order__("@07\r")
             self.__order__("@0R7\r")
+            self.Read_machine_message()
+            self.Read_machine_message()
             sorti = self._commander_("@07\r")
             print("Initialisation Connection: " , sorti )
             self._commander_("@0B1,1\r")
@@ -427,7 +429,7 @@ class CNC:
                 x = int(round(x,-1)) # aprés la comparaisont z peut devenir un flaout 
                 y = int(round(y,-1))
                 z = int(round(z,-1))
-                #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
+                print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
         else:
             print('machine non dispo')
