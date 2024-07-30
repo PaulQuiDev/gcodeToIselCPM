@@ -331,7 +331,7 @@ class CNCInterface:
 
     def move(self,  axis : str , amount: int):
         message = ""
-        if(axis == "X"):
+        if(axis == "X"): 
             message = self.briot.move_X(amount)
         elif( axis == "Y"):
             message = self.briot.move_Y(amount)

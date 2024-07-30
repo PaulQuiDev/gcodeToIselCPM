@@ -198,7 +198,7 @@ class CNC:
         cx = x_start + i
         cy = y_start + j
         r = np.sqrt(i**2 + j**2)
-
+ 
         start_angle = np.arctan2(y_start - cy, x_start - cx)
         end_angle = np.arctan2(y_end - cy, x_end - cx)
 
@@ -428,8 +428,8 @@ class CNC:
             else:
                 x = int(round(x,-1)) # aprés la comparaisont z peut devenir un flaout 
                 y = int(round(y,-1))
-                z = int(round(z,-1))
-                print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
+                z = int(z)
+                #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
         else:
             print('machine non dispo')
