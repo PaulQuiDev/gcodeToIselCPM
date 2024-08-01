@@ -82,7 +82,7 @@ class CNC:
                         j = float(truc[1:])
                     
                 if (word[0] == 'G1' or word[0] == 'G01'): # suivent les versiont c'est G1 ou G01
-                    if ( (abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) >= 0.1 ) : # le déplacement doit dépasser un demi milimétre 
+                    if ( (abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) >= 0.05 ) : # le déplacement doit dépasser un demi milimétre 
                         ordre.append(f"@0M {int(x*40 + self.x0)},{speed},{int(y*40 + self.y0)},{speed},{(int(z*40 - self.z0))},{speed},{(int(z*40 - self.z0))},{speed}\r")
                     else :
                         #print("ordre ignorer diff = " , (abs(x - old_x) + abs(y - old_y) + abs(abs(z)-abs(old_z))) )

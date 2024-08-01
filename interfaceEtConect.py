@@ -892,7 +892,7 @@ class CNCInterface:
     def open_Visualisation(self):
         self.open_in_new_terminal('openVisu.py')
     
-    def on_key_press(self, event):
+    def on_key_press(self, event): 
         
         if self.progress.get() != 0 or self.briot.state == False :
             None
