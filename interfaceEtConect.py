@@ -59,12 +59,14 @@ class CNCInterface:
         self.master.title("CNC Interface")
         self.master.configure(bg='grey')
 
-        self.move_increment = tk.IntVar(value=1)  # Variable pour l'incrément de déplacement
+        self.move_increment = tk.DoubleVar(value=1)  # Variable pour l'incrément de déplacement
         self.progress = tk.DoubleVar()
 
         self.stop_event = threading.Event()  # Variable de contrôle pour arrêter le processus
 
         self.file = None
+
+        self.master.bind("<KeyRelease>", self.on_key_press) # controil clavier triger 
 
         # Initialisation du laser si prêt
         if laserReady == 1: 
@@ -115,10 +117,10 @@ class CNCInterface:
         self.increment_frame = ttk.LabelFrame(self.master, text="Incrément de déplacement", padding="10 10 10 10")
         self.increment_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        self.increment_100mm_button = ttk.Radiobutton(self.increment_frame, text="100 mm", variable=self.move_increment, value=100)
+        self.increment_100mm_button = ttk.Radiobutton(self.increment_frame, text="50 mm", variable=self.move_increment, value=50)
         self.increment_10mm_button = ttk.Radiobutton(self.increment_frame, text="10 mm", variable=self.move_increment, value=10)
-        self.increment_5mm_button = ttk.Radiobutton(self.increment_frame, text="5 mm", variable=self.move_increment, value=5)
-        self.increment_1mm_button = ttk.Radiobutton(self.increment_frame, text="1 mm", variable=self.move_increment, value=1)
+        self.increment_5mm_button = ttk.Radiobutton(self.increment_frame, text="1 mm", variable=self.move_increment, value=1)
+        self.increment_1mm_button = ttk.Radiobutton(self.increment_frame, text="0.1 mm", variable=self.move_increment, value=0.1)
 
         self.increment_100mm_button.grid(row=0, column=0, sticky="nsew")
         self.increment_10mm_button.grid(row=0, column=1, sticky="nsew")
@@ -198,7 +200,7 @@ class CNCInterface:
         self.tooltips[self.z_minus_button] = Tooltip(self.z_minus_button, "-Z")
         self.tooltips[self.z_plus_button] = Tooltip(self.z_plus_button, "+Z")
         self.tooltips[self.home_button] = Tooltip(self.home_button, "Home")
-        self.tooltips[self.increment_100mm_button] = Tooltip(self.increment_100mm_button, "100 mm")
+        self.tooltips[self.increment_100mm_button] = Tooltip(self.increment_100mm_button, "50 mm")
         self.tooltips[self.increment_10mm_button] = Tooltip(self.increment_10mm_button, "10 mm")
         self.tooltips[self.increment_5mm_button] = Tooltip(self.increment_5mm_button, "5 mm")
         self.tooltips[self.increment_1mm_button] = Tooltip(self.increment_1mm_button, "1 mm")
@@ -314,7 +316,7 @@ class CNCInterface:
         self.img_start = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "start.png")).resize((90, 50)))
         self.img_mouvY = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)))
         self.img_mouvy = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(180))
-        self.img_mouvx = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(90))
+        self.img_mouvx = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(90)) 
         self.img_mouvX = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(270))
         self.img_mouvZ = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)))
         self.img_mouvz = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)).rotate(180))
@@ -328,15 +330,15 @@ class CNCInterface:
         self.img_laser_com = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "ComBord.png")).resize((50, 50)))
         self.img_laser_Select = Image.open(os.path.join(base_path, "FQlase.png"))
 
-
-    def move(self,  axis : str , amount: int):
+    def move(self,  axis : str , amount: float):
         message = ""
+        amount = int(amount*40)
         if(axis == "X"): 
-            message = self.briot.move_X(amount)
+            message = self.briot.move_x(amount)
         elif( axis == "Y"):
-            message = self.briot.move_Y(amount)
+            message = self.briot.move_y(amount)
         elif(axis == "Z"):
-            message = self.briot.move_Z(amount)
+            message = self.briot.move_Z(amount//10) # pour raison de sécu
         else:
             message= "Move not understood"
 
@@ -556,6 +558,7 @@ class CNCInterface:
     def stop(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
         self.stop_tool()
+        self.update_progress_bar(0)
         if (laserReady == 1)  :self.pwm.stop()
         self.message_text.insert(tk.END, "Arrêté\n")
         self.message_text.see(tk.END)
@@ -723,7 +726,7 @@ class CNCInterface:
         self.message_text.see(tk.END)       
         self.laserConfig.destroy()
     
-    def laserComOpen(self): # fenetre de sélection de ports
+    def laserComOpen(self): # fenetre de sélection de ports # pour windows ou carte pilotable
         self.port_Pwm_fenaitre = tk.Toplevel(self.master)
         self.port_Pwm_fenaitre.title("Ports de connection Module PWM")
         self.port_Pwm_fenaitre.geometry("400x280")
@@ -733,7 +736,7 @@ class CNCInterface:
     
         # Chargez et redimensionnez l'image pour qu'elle prenne tout l'espace de la fenêtre 
         original_image = self.img_laser_Select
-        resized_image = original_image.resize((400, 280), Image.ANTIALIAS)
+        resized_image = original_image.resize((400, 280), Image.LANCZOS)
         self.img_laser_Select = ImageTk.PhotoImage(resized_image)
     
         # Met l'image en arrière-plan
@@ -803,7 +806,7 @@ class CNCInterface:
                     pass
                 self.laserCom = None
 
-    def laserPWMsend(self ,puissance) -> bool :
+    def laserPWMsend(self ,puissance:float) -> bool :
         try :
             puissance = str(int(puissance))
         except:
@@ -888,6 +891,33 @@ class CNCInterface:
     
     def open_Visualisation(self):
         self.open_in_new_terminal('openVisu.py')
+    
+    def on_key_press(self, event):
+        
+        if self.progress.get() != 0 or self.briot.state == False :
+            None
+            #print("touche = ", event.keysym)
+        elif event.keysym == 'Up':
+            #print("Flèche vers le haut pressée")
+            self.move("Y", self.move_increment.get())
+        elif event.keysym == 'Down':
+            #print("Flèche vers le bas pressée")
+            self.move("Y", -self.move_increment.get())
+        elif event.keysym == 'Left':
+            #print("Flèche vers la gauche pressée")
+            self.move("X", -self.move_increment.get())
+        elif event.keysym == 'Right':
+            #print("Flèche vers la droite pressée")
+            self.move("X", self.move_increment.get())
+        elif event.keysym == 'plus':
+            #print("plus")
+            self.move("Z", self.move_increment.get())
+        elif event.keysym == 'minus':
+            #print("moins")
+            self.move("Z", -self.move_increment.get())
+        elif event.keysym == '0':
+            #print("0 c'est home")
+            self.home_machine()
 
 if __name__ == "__main__":
     root = tk.Tk()

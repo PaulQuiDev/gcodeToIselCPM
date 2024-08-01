@@ -426,8 +426,8 @@ class CNC:
             elif (z < 0 or z > self.max_z):
                 return ("z en dehors du plateau")
             else:
-                x = int(round(x,-1)) # aprés la comparaisont z peut devenir un flaout 
-                y = int(round(y,-1))
+                x = int(round(x)) # aprés la comparaisont z peut devenir un flaout 
+                y = int(round(y))
                 z = int(z)
                 #print(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
                 return self.send_position(f"@0M {x},{self.speed},{y},{self.speed},{-abs(z)},{self.speed},{-abs(z)},{self.speed}\r")
@@ -468,7 +468,17 @@ class CNC:
             print("Position Z invalide")
             return "Position Z invalide"
 
-    
+    # minuscule = coordonner machine sauf z car déjat le cas pour sécu
+    def move_x(self , X: int) -> str:
+        if ( (self.x + (X*40)) > 0 or (self.x + (X*40)) < 8000):
+            return self.go_to_machin(int(self.x + X), int(self.y) , int(self.z))
+        else: print("Position x invalide")
+        
+    def move_y(self, Y: int) -> str:
+        if (self.y + (Y * 40)) > 0 or (self.y + (Y) < 7900):
+            return self.go_to_machin( int(self.x), int(self.y + Y),  int(self.z))
+        else: print("Position y invalide")
+
     def DefSpeed(self , SPEED : int) -> None: # maj a speed = mm/s pour les ordres de déplacement 
         if (SPEED > 0 and SPEED < 50):
             self.speed = SPEED*40
