@@ -329,7 +329,7 @@ class CNCInterface:
         self.img_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "laser.png")).resize((50, 50)))
         self.img_power_laser = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "PowerLaser.png")))
         self.img_laser_com = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "ComBord.png")).resize((50, 50)))
-        self.img_laser_Select = Image.open(os.path.join(base_path, "FQlase.png"))
+        self.img_laser_Select = Image.open(os.path.join(base_path, "FQLase.png"))
 
     def move(self,  axis : str , amount: float):
         message = ""
