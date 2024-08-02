@@ -16,7 +16,7 @@ class CNC:
         self.y = 0
         self.z = 0
         # ==== = = = = = = = = 
-        self.speed = 100 # vitesse pour le G0 déplacement rapide 
+        self.speed = 1200 # vitesse pour le G0 déplacement rapide 
 
         # max distence = lenght(mm)* 40
         self.max_x = 8000
