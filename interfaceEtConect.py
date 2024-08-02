@@ -306,17 +306,18 @@ class CNCInterface:
             self.increment_frame.grid_columnconfigure(i, weight=1)
 
     def load_images(self):
+        # Détermine le chemin de base des ressources (images)
         if hasattr(sys, '_MEIPASS'):
             base_path = os.path.join(sys._MEIPASS, 'img')
         else:
             base_path = os.path.join(os.path.dirname(__file__), 'img')
-    
+
         # Charger les images pour les boutons de direction
         self.img_open = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "open.png")).resize((150, 150)))
         self.img_start = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "start.png")).resize((90, 50)))
         self.img_mouvY = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)))
         self.img_mouvy = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(180))
-        self.img_mouvx = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(90)) 
+        self.img_mouvx = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(90))
         self.img_mouvX = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouv.png")).resize((50, 50)).rotate(270))
         self.img_mouvZ = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)))
         self.img_mouvz = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "mouvZ.png")).resize((80, 80)).rotate(180))
@@ -516,6 +517,7 @@ class CNCInterface:
                         #print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file)) 
+                self.pwm.stop()
             else : #tu veux utiliser le laser avec un windows et la com a été initialiser 
                 laser = False 
                 self.laserBp.state(['!disabled'])
@@ -541,6 +543,7 @@ class CNCInterface:
                         #print(f" {self.file[i]} \n up  {self.briot.speed} ")
                     self.briot.send_position(self.file[i])
                     self.update_progress_bar((i*100)/len(self.file))
+                self.laserPWMsend(0)
 
         self.stop_tool()
 
