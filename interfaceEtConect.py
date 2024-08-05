@@ -761,7 +761,6 @@ class CNCInterface:
         retry_button = ttk.Button(self.port_Pwm_fenaitre, text="Connexion Appareil", command=self.laserModuleConection)
         canvas.create_window(200, 160, window=retry_button)
         
-
     def laserModuleConection(self): # fonction peut se connecter
         selected_port = self.selected_port.get()
         back = ""
@@ -788,7 +787,7 @@ class CNCInterface:
                 else:
                     self.port_Pwm_fenaitre.destroy()
                     self.laserBp.config(text='LASER', command=self.laserPowerSelect, image=self.img_laser)
-                    self.message_text.insert(tk.END, "Connection avec la module laser réussite"+"\n") 
+                    self.message_text.insert(tk.END, "Connexion avec le module laser réussie"+"\n") 
                     self.message_text.see(tk.END)
             except:
                 print('erreur module PWM')
