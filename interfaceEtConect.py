@@ -13,11 +13,14 @@ import sys
 
 
 try :
-    if platform.system() == 'Windows':
-        laserReady = 2
-    elif  platform.system() == 'Linux': #Laser ready 1:Linux rasp 2:Windows avec ESP 3:False
-        import RPi.GPIO as GPIO # Linux on rasberry pi
-        laserReady = 1    
+    if  platform.system() == 'Linux': #Laser ready 1:Linux rasp 2:Windows avec ESP 3:False
+        try :
+            import RPi.GPIO as GPIO # Linux on rasberry pi
+            laserReady = 1 
+        except:
+            laserReady = 2
+    elif platform.system() == 'Windows':
+        laserReady = 2  
     else :
         laserReady = 0 
 except:
