@@ -1,5 +1,6 @@
 import serial
 import numpy as np
+import time
 
 class CNC:
     def __init__(self, Port='COM8') -> None:
@@ -16,7 +17,7 @@ class CNC:
         self.y = 0
         self.z = 0
         # ==== = = = = = = = = 
-        self.speed = 1200 # vitesse pour le G0 déplacement rapide 
+        self.speed = 1200 # vitesse pour le G0 déplacement rapide 1200mm/min = 20mm/s 
 
         # max distence = lenght(mm)* 40
         self.max_x = 8000
@@ -60,8 +61,8 @@ class CNC:
         ordreSkip = 0
         for i in instru:
             word = i.split(' ')
-            if len(word) > 1 and word[0][0] == 'G':  # commande de direction
-                old_x ,old_y , old_z = x ,y ,z
+            if len(word) > 1 and word[0][0] == 'G':  # commande de direction g code
+                old_x ,old_y , old_z = x ,y ,z # on les garde en distences mm pour les calcules des arcs de cecles 
                 for truc in word:
                     if truc.startswith('X'):
                         x = float(truc[1:])
@@ -73,7 +74,7 @@ class CNC:
                         z = float(truc[1:])
                         #print('z :' , z, " machin=" , z*40)
                     elif truc.startswith('F'):
-                        speed = int(float(truc[1:]))
+                        speed = int(float(truc[1:])/1.5) # pour la bonne vitesse mm/min
                         if (speed == self.speed) : speed += 1 # la vitesse est le criter pour diférencie les G0 des G1
                     # juste pour la rotation    
                     elif truc.startswith('I'):
@@ -463,7 +464,7 @@ class CNC:
         
     def move_Z(self, Z: int) -> str:
         if (self.z + (Z * 40)) > 0 or (self.z + (Z * 40) < self.max_z):
-            return self.go_to_machin( int(self.x),  int(self.y), int(self.z + Z ))
+            return self.go_to_machin( int(self.x),  int(self.y), int(self.z + Z )) # slower is safer
         else: 
             print("Position Z invalide")
             return "Position Z invalide"
@@ -480,8 +481,8 @@ class CNC:
         else: print("Position y invalide")
 
     def DefSpeed(self , SPEED : int) -> None: # maj a speed = mm/s pour les ordres de déplacement 
-        if (SPEED > 0 and SPEED < 50):
-            self.speed = SPEED*40
+        if (SPEED > 0 ):
+            self.speed = int( round( SPEED/1.5))
         else:
             print("Vitesse non conforme")
 
@@ -533,7 +534,7 @@ if __name__ == "__main__":
 
     briot.initialisation_connexion()
 
-    briot.DefSpeed(35)
+    briot.DefSpeed(35*40)
 
     briot.go_to_machin(1000,2500,200)
     briot.SetLocal0()

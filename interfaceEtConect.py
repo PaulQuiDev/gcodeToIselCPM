@@ -34,7 +34,7 @@ class Tooltip:
         self.tooltip_window = None
         self.widget.bind("<Enter>", self.show_tooltip)
         self.widget.bind("<Leave>", self.hide_tooltip)
-
+ 
     def show_tooltip(self, event):
         x, y, _, _ = self.widget.bbox("insert")
         x += self.widget.winfo_rootx() + 25
@@ -859,7 +859,7 @@ class CNCInterface:
 
     def initConnection(self):
         self.briot = CNC()
-        self.briot.DefSpeed(35)
+        self.briot.DefSpeed(2100) # 35 mm/s en mm/min
     
     def on_closing(self):
         self.stop_event.set()  # Déclenche l'événement d'arrêt
