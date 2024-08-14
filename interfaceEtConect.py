@@ -813,7 +813,7 @@ class CNCInterface:
 
     def laserPWMsend(self ,puissance:float) -> bool :
         try :
-            puissance = str(int(puissance))
+            puissance = str(round(puissance,2))
         except:
             None
         if ( self.laserCom  != None) :
