@@ -929,3 +929,5 @@ if __name__ == "__main__":
     #conection
     app = CNCInterface(master=root)
     root.mainloop()
+
+# compile : nuitka --standalone --onefile --output-dir=dist --enable-plugin=tk-inter --include-data-dir=img=img --windows-icon-from-ico=img/icon.ico interfaceEtConect.py
