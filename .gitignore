@@ -5,3 +5,4 @@ Holder.nc
 gcodeToIselCPM.egg-info
 build/
 dist/
+.vscode/
