@@ -583,8 +583,9 @@ class CNCInterface:
                 self.briot = CNC('/dev/ttyUSB0')
             else :
                 self.briot = CNC() #si pas connecter réinisialiste 
-            self.briot.DefSpeed(35)
+            self.briot.DefSpeed(35*40)
         message = self.briot.initialisation_connexion()
+        self.enable_buttons()
         if (message == "Bien Connecter"):
             self.message_text.insert(tk.END, "Connexion réussie\n")
             self.message_text.see(tk.END)
